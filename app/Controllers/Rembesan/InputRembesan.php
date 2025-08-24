@@ -333,52 +333,53 @@ Events::trigger('dataSR:insert', $pengukuran_id);
     }
 
     private function saveBocoran($data, $pengukuran_id)
-    {
-        try {
-            $check = $this->bocoranModel->where("pengukuran_id", $pengukuran_id)->first();
-            if ($check) {
-                return $this->response->setJSON([
-                    "status" => "success",
-                    "message" => "Data bocoran sudah ada."
-                ]);
-            }
-
-            $bocoranData = [
-                "pengukuran_id" => $pengukuran_id,
-                "elv_624_t1" => $this->getVal('elv_624_t1', $data),
-                "elv_624_t1_kode" => $this->getVal('elv_624_t1_kode', $data),
-                "elv_615_t2" => $this->getVal('elv_615_t2', $data),
-                "elv_615_t2_kode" => $this->getVal('elv_615_t2_kode', $data),
-                "pipa_p1" => $this->getVal('pipa_p1', $data),
-                "pipa_p1_kode" => $this->getVal('pipa_p1_kode', $data),
-            ];
-
-            $this->db->transStart();
-            
-            if (!$this->bocoranModel->insert($bocoranData)) {
-                $this->db->transRollback();
-                return $this->response->setJSON([
-                    "status" => "error",
-                    "message" => "Gagal menyimpan data bocoran: " . 
-                                implode(', ', $this->bocoranModel->errors())
-                ]);
-            }
-
-            Events::trigger('dataBocoran:insert', $pengukuran_id);
-
-            $this->db->transComplete();
-
+{
+    try {
+        $check = $this->bocoranModel->where("pengukuran_id", $pengukuran_id)->first();
+        if ($check) {
             return $this->response->setJSON([
                 "status" => "success",
-                "message" => "Data bocoran berhasil disimpan."
-            ]);
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            log_message('error', '[saveBocoran] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                "status" => "error",
-                "message" => "Terjadi kesalahan saat menyimpan data bocoran: " . $e->getMessage()
+                "message" => "Data bocoran sudah ada."
             ]);
         }
+
+        $bocoranData = [
+            "pengukuran_id" => $pengukuran_id,
+            "elv_624_t1" => $this->getVal('elv_624_t1', $data),
+            "elv_624_t1_kode" => $this->getVal('elv_624_t1_kode', $data),
+            "elv_615_t2" => $this->getVal('elv_615_t2', $data),
+            "elv_615_t2_kode" => $this->getVal('elv_615_t2_kode', $data),
+            "pipa_p1" => $this->getVal('pipa_p1', $data),
+            "pipa_p1_kode" => $this->getVal('pipa_p1_kode', $data),
+        ];
+
+        $this->db->transStart();
+
+        if (!$this->bocoranModel->insert($bocoranData)) {
+            $this->db->transRollback();
+            log_message('error', '[saveBocoran] Gagal insert: ' . json_encode($this->bocoranModel->errors()));
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal menyimpan data bocoran"
+            ]);
+        }
+
+        $this->db->transComplete(); // ✅ Commit transaksi
+
+        // ✅ Panggil event setelah commit
+        Events::trigger('dataPengukuran:insert', $pengukuran_id);
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "message" => "Data bocoran berhasil disimpan."
+        ]);
+    } catch (\Exception $e) {
+        $this->db->transRollback();
+        log_message('error', '[saveBocoran] Error: ' . $e->getMessage());
+        return $this->response->setJSON([
+            "status" => "error",
+            "message" => "Terjadi kesalahan saat menyimpan data bocoran: " . $e->getMessage()
+        ]);
     }
+}
 }
