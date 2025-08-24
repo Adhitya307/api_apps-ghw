@@ -145,15 +145,6 @@ class InputRembesan extends Controller
                 ]);
             }
 
-            if (!is_numeric($bulan)) {
-                $bulan = $this->convertBulanToNumber($bulan);
-                if ($bulan === null) {
-                    return $this->response->setJSON([
-                        "status" => "error",
-                        "message" => "Nama bulan tidak valid! Contoh: Januari, Februari, dst."
-                    ]);
-                }
-            }
 
             if ($periode && !preg_match('/^TW-/i', $periode)) {
                 if (is_numeric($periode)) {
@@ -216,22 +207,6 @@ class InputRembesan extends Controller
                 "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
             ]);
         }
-    }
-
-    private function convertBulanToNumber($bulanText)
-    {
-        $bulanMap = [
-            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
-            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
-            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12
-        ];
-        
-        if (!$bulanText) {
-            return null;
-        }
-        
-        $bulanLower = strtolower(trim($bulanText));
-        return isset($bulanMap[$bulanLower]) ? $bulanMap[$bulanLower] : null;
     }
 
     private function saveThomson($data, $pengukuran_id)
