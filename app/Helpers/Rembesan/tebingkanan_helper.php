@@ -3,19 +3,24 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 if (!function_exists('hitungSrTebingKanan')) {
     /**
-     * Hitung SR Tebing Kanan dari array data SR.
-     * 
-     * @param array $dataSr
-     * @param array $srFields Contoh: [1, 40, 66, ..., 106]
-     * @return float
+     * Hitung total debit SR Tebing Kanan dari data SR.
+     * Prioritas ambil langsung nilai q dari dataSR (sr_xxx_q).
      */
     function hitungSrTebingKanan(array $dataSr, array $srFields): float
     {
-        $total = 0;
+        $total = 0.0;
         foreach ($srFields as $field) {
-            $nilai = $dataSr["sr_{$field}_nilai"] ?? 0;
-            $kode  = $dataSr["sr_{$field}_kode"] ?? '';
-            $total += perhitunganQ_sr($nilai, $kode);
+            // Ambil nilai q langsung dari hasil perhitungan SR jika ada
+            $q = (float)($dataSr["sr_{$field}_q"] ?? 0);
+
+            if ($q == 0.0) {
+                // fallback hitung manual jika q tidak tersedia
+                $nilai = (float)($dataSr["sr_{$field}_nilai"] ?? 0);
+                $kode  = (string)($dataSr["sr_{$field}_kode"] ?? '');
+                $q     = perhitunganQ_sr($nilai, $kode);
+            }
+
+            $total += $q;
         }
         return $total;
     }
@@ -23,7 +28,10 @@ if (!function_exists('hitungSrTebingKanan')) {
 
 if (!function_exists('getAmbangTebingKanan')) {
     /**
-     * Ambil seluruh data ambang dari Excel (kolom B = TMA, kolom E = Ambang Tebing Kanan)
+     * Load data ambang Tebing Kanan dari Excel.
+     * Kolom B = TMA, Kolom E = Ambang
+     * 
+     * @return array ['644.82' => 123.45, ...]
      */
     function getAmbangTebingKanan(string $fileExcel, string $sheetName = 'AMBANG TIAP CM'): array
     {
@@ -33,12 +41,15 @@ if (!function_exists('getAmbangTebingKanan')) {
         $data = [];
 
         for ($row = 5; $row <= $highestRow; $row++) {
-            $tma = $sheet->getCell('B' . $row)->getCalculatedValue();
+            $tma    = $sheet->getCell('B' . $row)->getCalculatedValue();
             $ambang = $sheet->getCell('E' . $row)->getCalculatedValue();
 
-            if ($tma === null || $tma === '') continue;
+            if ($tma === null || $tma === '') {
+                continue;
+            }
 
-            $data[(string)$tma] = (float)$ambang;
+            $tmaKey = number_format((float)$tma, 2, '.', '');
+            $data[$tmaKey] = (float)$ambang;
         }
 
         return $data;
@@ -47,11 +58,33 @@ if (!function_exists('getAmbangTebingKanan')) {
 
 if (!function_exists('cariAmbangTebingKanan')) {
     /**
-     * Cari ambang Tebing Kanan berdasarkan TMA persis.
+     * Cari ambang berdasarkan TMA.
+     * Jika tidak ada match persis, pilih nilai ambang terdekat.
      */
     function cariAmbangTebingKanan(float $tma, array $ambangData)
     {
-        $key = (string)$tma;
-        return $ambangData[$key] ?? null;
+        if (empty($ambangData)) {
+            return null;
+        }
+
+        $tmaKey = number_format($tma, 2, '.', '');
+
+        // Exact match
+        if (isset($ambangData[$tmaKey])) {
+            return $ambangData[$tmaKey];
+        }
+
+        // Cari nilai TMA terdekat
+        $closestKey = null;
+        $closestDiff = INF;
+        foreach ($ambangData as $key => $val) {
+            $diff = abs((float)$tmaKey - (float)$key);
+            if ($diff < $closestDiff) {
+                $closestDiff = $diff;
+                $closestKey  = $key;
+            }
+        }
+
+        return $closestKey !== null ? $ambangData[$closestKey] : null;
     }
 }

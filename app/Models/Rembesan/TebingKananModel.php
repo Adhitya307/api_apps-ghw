@@ -11,16 +11,16 @@ class TebingKananModel extends Model
     
     protected $validationRules = [
         'pengukuran_id' => 'required|numeric|is_not_unique[t_data_pengukuran.id]',
-        'sr' => 'permit_empty|numeric',
-        'ambang' => 'permit_empty|numeric',
-        'B5' => 'permit_empty|numeric'
+        'sr'            => 'permit_empty|numeric',
+        'ambang'        => 'permit_empty|numeric',
+        'B5'            => 'permit_empty|numeric'
     ];
     
     protected $validationMessages = [
         'pengukuran_id' => [
-            'required' => 'pengukuran_id harus diisi',
-            'numeric' => 'pengukuran_id harus berupa angka',
-            'is_not_unique' => 'Data pengukuran dengan ID {value} tidak ditemukan'
+            'required'       => 'pengukuran_id harus diisi',
+            'numeric'        => 'pengukuran_id harus berupa angka',
+            'is_not_unique'  => 'Data pengukuran dengan ID {value} tidak ditemukan'
         ]
     ];
     
