@@ -129,85 +129,110 @@ class InputRembesan extends Controller
     }
 
     private function savePengukuran($data, $temp_id)
-    {
-        try {
-            $tahun   = $this->getVal('tahun', $data);
-            $bulan   = $this->getVal('bulan', $data);
-            $periode = $this->getVal('periode', $data);
-            $tanggal = $this->getVal('tanggal', $data);
-            $tma     = $this->getVal('tma_waduk', $data);
-            $curah   = $this->getVal('curah_hujan', $data);
+{
+    try {
+        $pengukuran_id = $this->getVal('pengukuran_id', $data);
+        $tahun   = $this->getVal('tahun', $data);
+        $bulan   = $this->getVal('bulan', $data);
+        $periode = $this->getVal('periode', $data);
+        $tanggal = $this->getVal('tanggal', $data);
+        $tma     = $this->getVal('tma_waduk', $data);
+        $curah   = $this->getVal('curah_hujan', $data);
 
-            if (!$tahun || !$tanggal) {
-                return $this->response->setJSON([
-                    "status" => "error",
-                    "message" => "Tahun dan Tanggal wajib diisi!"
-                ]);
-            }
-
-
-            if ($periode && !preg_match('/^TW-/i', $periode)) {
-                if (is_numeric($periode)) {
-                    $periode = "TW-" . $periode;
-                }
-            }
-
-            $check = $this->db->table("t_data_pengukuran")
-                ->where("tahun", $tahun)
-                ->where("bulan", $bulan)
-                ->where("periode", $periode)
-                ->get()
-                ->getRow();
-                
+        // ✅ Step 1: Jika pengukuran_id ada → update saja
+        if ($pengukuran_id) {
+            $check = $this->pengukuranModel->find($pengukuran_id);
             if ($check) {
-                return $this->response->setJSON([
-                    "status" => "success",
-                    "message" => "Data sudah ada.",
-                    "pengukuran_id" => $check->id
-                ]);
-            }
-
-            $insertData = [
-                "tahun" => $tahun,
-                "bulan" => $bulan,
-                "periode" => $periode,
-                "tanggal" => $tanggal,
-                "tma_waduk" => $tma,
-                "curah_hujan" => $curah,
-                "temp_id" => $temp_id
-            ];
-
-            $this->db->transStart();
-            
-            if (!$this->pengukuranModel->insert($insertData)) {
-                $this->db->transRollback();
+                if ($tma !== null) {
+                    $this->pengukuranModel->update($pengukuran_id, ['tma_waduk' => $tma]);
+                    return $this->response->setJSON([
+                        "status" => "success",
+                        "message" => "TMA Waduk berhasil diperbarui.",
+                        "pengukuran_id" => $pengukuran_id
+                    ]);
+                }
                 return $this->response->setJSON([
                     "status" => "error",
-                    "message" => "Gagal menyimpan data pengukuran: " . 
-                                implode(', ', $this->pengukuranModel->errors())
+                    "message" => "Tidak ada nilai TMA yang dikirim!"
                 ]);
             }
+        }
 
-            $pengukuran_id = $this->pengukuranModel->getInsertID();
+        // ✅ Step 2: Insert baru (wajib tahun & tanggal)
+        if (!$tahun || !$tanggal) {
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Tahun dan Tanggal wajib diisi!"
+            ]);
+        }
 
-            Events::trigger('dataPengukuran:insert', $pengukuran_id);
+        if ($periode && !preg_match('/^TW-/i', $periode)) {
+            if (is_numeric($periode)) {
+                $periode = "TW-" . $periode;
+            }
+        }
 
-            $this->db->transComplete();
+        // ✅ Cek duplikat berdasarkan tahun/bulan/periode
+        $check = $this->db->table("t_data_pengukuran")
+            ->where("tahun", $tahun)
+            ->where("bulan", $bulan)
+            ->where("periode", $periode)
+            ->get()
+            ->getRow();
+
+        if ($check) {
+            if ($tma !== null) {
+                $this->db->table("t_data_pengukuran")
+                    ->where("id", $check->id)
+                    ->update(["tma_waduk" => $tma]);
+            }
 
             return $this->response->setJSON([
                 "status" => "success",
-                "message" => "Data pengukuran berhasil disimpan.",
-                "pengukuran_id" => $pengukuran_id
-            ]);
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            log_message('error', '[savePengukuran] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                "status" => "error",
-                "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
+                "message" => $tma !== null ? "TMA Waduk diperbarui." : "Data sudah ada.",
+                "pengukuran_id" => $check->id
             ]);
         }
+
+        // ✅ Insert baru
+        $insertData = [
+            "tahun" => $tahun,
+            "bulan" => $bulan,
+            "periode" => $periode,
+            "tanggal" => $tanggal,
+            "tma_waduk" => $tma,
+            "curah_hujan" => $curah,
+            "temp_id" => $temp_id
+        ];
+
+        $this->db->transStart();
+        if (!$this->pengukuranModel->insert($insertData)) {
+            $this->db->transRollback();
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal menyimpan data pengukuran: " . implode(', ', $this->pengukuranModel->errors())
+            ]);
+        }
+
+        $pengukuran_id = $this->pengukuranModel->getInsertID();
+        Events::trigger('dataPengukuran:insert', $pengukuran_id);
+        $this->db->transComplete();
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "message" => "Data pengukuran berhasil disimpan.",
+            "pengukuran_id" => $pengukuran_id
+        ]);
+    } catch (\Exception $e) {
+        $this->db->transRollback();
+        log_message('error', '[savePengukuran] Error: ' . $e->getMessage());
+        return $this->response->setJSON([
+            "status" => "error",
+            "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
+        ]);
     }
+}
+
 
     private function saveThomson($data, $pengukuran_id)
     {
