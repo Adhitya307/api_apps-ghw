@@ -165,3 +165,25 @@ Events::on('dataTotalBocoran:insert', function ($pengukuran_id) {
         log_message('error', "[Events] Error Total Bocoran: " . $e->getMessage());
     }
 });
+
+// 🔹 Listener dataThomson:insert
+Events::on('dataThomson:insert', function ($pengukuran_id) {
+    log_message('debug', "[Events] Trigger dataThomson:insert untuk ID: {$pengukuran_id}");
+    try {
+        $thomsonCtrl = new \App\Controllers\Rembesan\ThomsonController();
+        $hasil = $thomsonCtrl->hitung($pengukuran_id, true); // true supaya hasil berupa array
+        
+        if ($hasil['success'] === true) {
+            log_message('debug', "[Events] Thomson berhasil diproses untuk ID: {$pengukuran_id} => " . json_encode($hasil['thomson']));
+            
+            // 🔹 Opsional: cek dan trigger Total Bocoran jika diperlukan
+            if (function_exists('\Config\checkAndTriggerTotalBocoran')) {
+                \Config\checkAndTriggerTotalBocoran($pengukuran_id);
+            }
+        } else {
+            log_message('error', "[Events] Thomson gagal untuk ID: {$pengukuran_id} => " . $hasil['message']);
+        }
+    } catch (\Exception $e) {
+        log_message('error', "[Events] Error ThomsonController: " . $e->getMessage());
+    }
+});
