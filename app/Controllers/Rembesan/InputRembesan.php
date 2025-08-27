@@ -131,7 +131,7 @@ class InputRembesan extends Controller
     private function savePengukuran($data, $temp_id)
 {
     try {
-        $pengukuran_id = $this->getVal('pengukuran_id', $data);
+        $pengukuran_id = $this->getVal('pengukuran_id', $data); // ID yang dipilih
         $tahun   = $this->getVal('tahun', $data);
         $bulan   = $this->getVal('bulan', $data);
         $periode = $this->getVal('periode', $data);
@@ -139,26 +139,42 @@ class InputRembesan extends Controller
         $tma     = $this->getVal('tma_waduk', $data);
         $curah   = $this->getVal('curah_hujan', $data);
 
-        // ✅ Step 1: Jika pengukuran_id ada → update saja
+        // ✅ STEP 1: Jika ada pengukuran_id → update jika TMA NULL
         if ($pengukuran_id) {
             $check = $this->pengukuranModel->find($pengukuran_id);
-            if ($check) {
-                if ($tma !== null) {
+
+            if (!$check) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pengukuran tidak ditemukan!"
+                ]);
+            }
+
+            if ($tma !== null) {
+                if ($check['tma_waduk'] === null) {
                     $this->pengukuranModel->update($pengukuran_id, ['tma_waduk' => $tma]);
+
                     return $this->response->setJSON([
                         "status" => "success",
                         "message" => "TMA Waduk berhasil diperbarui.",
                         "pengukuran_id" => $pengukuran_id
                     ]);
+                } else {
+                    return $this->response->setJSON([
+                        "status" => "info",
+                        "message" => "TMA Waduk sudah ada, tidak diperbarui.",
+                        "pengukuran_id" => $pengukuran_id
+                    ]);
                 }
-                return $this->response->setJSON([
-                    "status" => "error",
-                    "message" => "Tidak ada nilai TMA yang dikirim!"
-                ]);
             }
+
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Tidak ada nilai TMA yang dikirim!"
+            ]);
         }
 
-        // ✅ Step 2: Insert baru (wajib tahun & tanggal)
+        // ✅ STEP 2: Jika tidak ada pengukuran_id → wajib tahun & tanggal
         if (!$tahun || !$tanggal) {
             return $this->response->setJSON([
                 "status" => "error",
@@ -166,13 +182,14 @@ class InputRembesan extends Controller
             ]);
         }
 
+        // Format periode
         if ($periode && !preg_match('/^TW-/i', $periode)) {
             if (is_numeric($periode)) {
                 $periode = "TW-" . $periode;
             }
         }
 
-        // ✅ Cek duplikat berdasarkan tahun/bulan/periode
+        // ✅ Cek apakah data sudah ada berdasarkan tahun/bulan/periode
         $check = $this->db->table("t_data_pengukuran")
             ->where("tahun", $tahun)
             ->where("bulan", $bulan)
@@ -182,19 +199,33 @@ class InputRembesan extends Controller
 
         if ($check) {
             if ($tma !== null) {
-                $this->db->table("t_data_pengukuran")
-                    ->where("id", $check->id)
-                    ->update(["tma_waduk" => $tma]);
+                if ($check->tma_waduk === null) {
+                    $this->db->table("t_data_pengukuran")
+                        ->where("id", $check->id)
+                        ->update(["tma_waduk" => $tma]);
+
+                    return $this->response->setJSON([
+                        "status" => "success",
+                        "message" => "TMA Waduk berhasil diperbarui.",
+                        "pengukuran_id" => $check->id
+                    ]);
+                } else {
+                    return $this->response->setJSON([
+                        "status" => "info",
+                        "message" => "TMA Waduk sudah ada, tidak diperbarui.",
+                        "pengukuran_id" => $check->id
+                    ]);
+                }
             }
 
             return $this->response->setJSON([
-                "status" => "success",
-                "message" => $tma !== null ? "TMA Waduk diperbarui." : "Data sudah ada.",
+                "status" => "info",
+                "message" => "Data pengukuran sudah ada.",
                 "pengukuran_id" => $check->id
             ]);
         }
 
-        // ✅ Insert baru
+        // ✅ STEP 3: Insert baru jika belum ada data
         $insertData = [
             "tahun" => $tahun,
             "bulan" => $bulan,
@@ -206,16 +237,20 @@ class InputRembesan extends Controller
         ];
 
         $this->db->transStart();
+
         if (!$this->pengukuranModel->insert($insertData)) {
             $this->db->transRollback();
             return $this->response->setJSON([
                 "status" => "error",
-                "message" => "Gagal menyimpan data pengukuran: " . implode(', ', $this->pengukuranModel->errors())
+                "message" => "Gagal menyimpan data pengukuran: " .
+                    implode(', ', $this->pengukuranModel->errors())
             ]);
         }
 
         $pengukuran_id = $this->pengukuranModel->getInsertID();
+
         Events::trigger('dataPengukuran:insert', $pengukuran_id);
+
         $this->db->transComplete();
 
         return $this->response->setJSON([
@@ -223,6 +258,7 @@ class InputRembesan extends Controller
             "message" => "Data pengukuran berhasil disimpan.",
             "pengukuran_id" => $pengukuran_id
         ]);
+
     } catch (\Exception $e) {
         $this->db->transRollback();
         log_message('error', '[savePengukuran] Error: ' . $e->getMessage());
@@ -233,55 +269,118 @@ class InputRembesan extends Controller
     }
 }
 
-
-    private function saveThomson($data, $pengukuran_id)
-    {
-        try {
-            $check = $this->thomsonModel->where("pengukuran_id", $pengukuran_id)->first();
-            if ($check) {
-                return $this->response->setJSON([
-                    "status" => "success",
-                    "message" => "Data Thomson Weir sudah ada."
-                ]);
-            }
-
-            $thomsonData = [
-                "pengukuran_id" => $pengukuran_id,
-                "a1_r" => $this->getVal('a1_r', $data),
-                "a1_l" => $this->getVal('a1_l', $data),
-                "b1"   => $this->getVal('b1', $data),
-                "b3"   => $this->getVal('b3', $data),
-                "b5"   => $this->getVal('b5', $data),
-            ];
-
-            $this->db->transStart();
-            
-            if (!$this->thomsonModel->insert($thomsonData)) {
-                $this->db->transRollback();
-                return $this->response->setJSON([
-                    "status" => "error",
-                    "message" => "Gagal menyimpan Thomson Weir: " . 
-                                implode(', ', $this->thomsonModel->errors())
-                ]);
-            }
-
-            Events::trigger('dataThomson:insert', $pengukuran_id);
-
-            $this->db->transComplete();
-
-            return $this->response->setJSON([
-                "status" => "success",
-                "message" => "Data Thomson Weir berhasil disimpan."
-            ]);
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            log_message('error', '[saveThomson] Error: ' . $e->getMessage());
+   private function saveThomson($data, $pengukuran_id)
+{
+    try {
+        // Validasi pengukuran_id wajib ada
+        if (!$pengukuran_id) {
             return $this->response->setJSON([
                 "status" => "error",
-                "message" => "Terjadi kesalahan saat menyimpan data Thomson: " . $e->getMessage()
+                "message" => "Silakan pilih data pengukuran terlebih dahulu!"
             ]);
         }
+
+        // Ambil data thomson yang sudah ada berdasarkan pengukuran_id
+        $existing = $this->thomsonModel->where("pengukuran_id", $pengukuran_id)->first();
+
+        // Field yang akan disimpan
+        $fields = ['a1_r', 'a1_l', 'b1', 'b3', 'b5'];
+
+        if ($existing) {
+            $updateData = [];
+            $infoMessages = [];
+
+            foreach ($fields as $field) {
+                $newValue = $this->getVal($field, $data);
+
+                if ($newValue !== null) {
+                    if ($existing[$field] === null) {
+                        // Kolom kosong → update
+                        $updateData[$field] = $newValue;
+                    } else {
+                        // Kolom sudah ada nilai → tidak update
+                        $infoMessages[] = "Kolom {$field} sudah terisi, tidak diperbarui.";
+                    }
+                }
+            }
+
+            if (!empty($updateData)) {
+                $this->db->transStart();
+
+                if (!$this->thomsonModel->update($existing['id'], $updateData)) {
+                    $this->db->transRollback();
+                    return $this->response->setJSON([
+                        "status" => "error",
+                        "message" => "Gagal memperbarui data Thomson Weir: " .
+                                     implode(', ', $this->thomsonModel->errors())
+                    ]);
+                }
+
+                $this->db->transComplete();
+
+                return $this->response->setJSON([
+                    "status" => "success",
+                    "message" => "Sebagian data Thomson berhasil diperbarui." .
+                                 (!empty($infoMessages) ? " " . implode(' ', $infoMessages) : "")
+                ]);
+            }
+
+            return $this->response->setJSON([
+                "status" => "info",
+                "message" => "Tidak ada kolom yang diperbarui. " .
+                             (!empty($infoMessages) ? implode(' ', $infoMessages) : "Data Thomson sudah lengkap.")
+            ]);
+        }
+
+        // Jika belum ada data → insert baru
+        $insertData = ["pengukuran_id" => $pengukuran_id];
+        $hasValue = false;
+
+        foreach ($fields as $field) {
+            $val = $this->getVal($field, $data);
+            $insertData[$field] = $val;
+            if ($val !== null) {
+                $hasValue = true;
+            }
+        }
+
+        // Validasi minimal 1 kolom harus diisi
+        if (!$hasValue) {
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Minimal satu nilai Thomson Weir harus diisi!"
+            ]);
+        }
+
+        $this->db->transStart();
+
+        if (!$this->thomsonModel->insert($insertData)) {
+            $this->db->transRollback();
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal menyimpan data Thomson Weir: " .
+                             implode(', ', $this->thomsonModel->errors())
+            ]);
+        }
+
+        Events::trigger('dataThomson:insert', $pengukuran_id);
+
+        $this->db->transComplete();
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "message" => "Data Thomson Weir berhasil disimpan."
+        ]);
+
+    } catch (\Exception $e) {
+        $this->db->transRollback();
+        log_message('error', '[saveThomson] Error: ' . $e->getMessage());
+        return $this->response->setJSON([
+            "status" => "error",
+            "message" => "Terjadi kesalahan saat menyimpan data Thomson: " . $e->getMessage()
+        ]);
     }
+}
 
     private function saveSr($data, $pengukuran_id)
     {

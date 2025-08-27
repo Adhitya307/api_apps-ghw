@@ -11,107 +11,138 @@ use App\Controllers\Rembesan\SpillwayController;
 use App\Controllers\Rembesan\TebingKananController;
 use App\Controllers\Rembesan\TotalBocoranController;
 use App\Controllers\Rembesan\BatasMaksimalController;
+use CodeIgniter\API\ResponseTrait;
 
 class RumusRembesan extends BaseController
 {
+    use ResponseTrait;
+
     /**
-     * Trigger semua perhitungan untuk pengukuran tertentu
-     *
-     * @param int $pengukuran_id
-     * @return array
+     * Endpoint API: Hitung semua perhitungan
+     * Body JSON: { "pengukuran_id": 123 }
      */
-    public function inputDataForId($pengukuran_id)
+    public function hitungSemua()
     {
-        helper('batasmaksimal'); // load helper batasmaksimal
+        $json = $this->request->getJSON(true);
+        $pengukuran_id = $json['pengukuran_id'] ?? null;
 
-        log_message('debug', "[RumusRembesan] START proses untuk ID: {$pengukuran_id}");
+        if (!$pengukuran_id) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'pengukuran_id wajib diisi'
+            ], 400);
+        }
 
-        $result = [
-            'success'       => true,
-            'thomson'       => null,
-            'sr'            => null,
-            'bocoran'       => null,
-            'intigalery'    => null,
-            'spillway'      => null,
-            'tebingkanan'   => null,
-            'totalbocoran'  => null,
-            'batasmaksimal' => null,
-        ];
+        log_message('debug', "[HitungSemua] START proses semua perhitungan untuk ID={$pengukuran_id}");
+
+        $results = [];
+        $allSuccess = true;
 
         try {
             // 🔹 Thomson
             $thomsonCtrl  = new ThomsonController();
             $hasilThomson = $thomsonCtrl->hitung($pengukuran_id, true);
-            $result['thomson'] = $hasilThomson['success'] 
-                ? $hasilThomson['thomson'] 
-                : ['success' => false, 'message' => $hasilThomson['message']];
+            if ($hasilThomson['success'] ?? false) {
+                $results['Thomson'] = "Perhitungan Thomson berhasil";
+                log_message('debug', "[HitungSemua] Thomson OK untuk ID={$pengukuran_id}");
+            } else {
+                $results['Thomson'] = "Perhitungan Thomson gagal: " . ($hasilThomson['message'] ?? 'Tidak diketahui');
+                log_message('error', "[HitungSemua] Thomson GAGAL | ID={$pengukuran_id} | Detail: " . json_encode($hasilThomson));
+                $allSuccess = false;
+            }
 
             // 🔹 SR
             $srCtrl = new SRController();
             $hasilSR = $srCtrl->hitung($pengukuran_id, true);
-            $result['sr'] = ($hasilSR['status'] ?? '') === 'success' 
-                ? $hasilSR['data'] 
-                : ['success' => false, 'message' => ($hasilSR['msg'] ?? 'Data SR tidak ditemukan')];
+            if (($hasilSR['status'] ?? '') === 'success') {
+                $results['SR'] = "Perhitungan SR berhasil";
+                log_message('debug', "[HitungSemua] SR OK untuk ID={$pengukuran_id}");
+            } else {
+                $results['SR'] = "Perhitungan SR gagal: " . ($hasilSR['msg'] ?? 'Data SR tidak ditemukan');
+                log_message('error', "[HitungSemua] SR GAGAL | ID={$pengukuran_id} | Detail: " . json_encode($hasilSR));
+                $allSuccess = false;
+            }
 
             // 🔹 Bocoran Baru
             $bocoranCtrl = new BocoranBaruController();
             $bocoranCtrl->hitungLangsung($pengukuran_id);
-            $result['bocoran'] = ['success' => true, 'message' => 'Perhitungan bocoran dipicu'];
+            $results['BocoranBaru'] = "Perhitungan Bocoran Baru berhasil (dipicu)";
+            log_message('debug', "[HitungSemua] BocoranBaru OK untuk ID={$pengukuran_id}");
 
             // 🔹 Inti Galery
             $intiCtrl  = new IntiGaleryController();
             $hasilInti = $intiCtrl->proses($pengukuran_id);
-            $result['intigalery'] = $hasilInti !== false 
-                ? $hasilInti 
-                : ['success' => false, 'message' => 'Perhitungan IntiGalery gagal'];
+            if ($hasilInti !== false) {
+                $results['IntiGalery'] = "Perhitungan IntiGalery berhasil";
+                log_message('debug', "[HitungSemua] IntiGalery OK untuk ID={$pengukuran_id}");
+            } else {
+                $results['IntiGalery'] = "Perhitungan IntiGalery gagal";
+                log_message('error', "[HitungSemua] IntiGalery GAGAL | ID={$pengukuran_id}");
+                $allSuccess = false;
+            }
 
             // 🔹 Spillway
             $spillwayCtrl = new SpillwayController();
             $hasilSpillway = $spillwayCtrl->proses($pengukuran_id);
-            $result['spillway'] = $hasilSpillway !== false
-                ? $hasilSpillway
-                : ['success' => false, 'message' => 'Perhitungan Spillway gagal'];
+            if ($hasilSpillway !== false) {
+                $results['Spillway'] = "Perhitungan Spillway berhasil";
+                log_message('debug', "[HitungSemua] Spillway OK untuk ID={$pengukuran_id}");
+            } else {
+                $results['Spillway'] = "Perhitungan Spillway gagal";
+                log_message('error', "[HitungSemua] Spillway GAGAL | ID={$pengukuran_id}");
+                $allSuccess = false;
+            }
 
             // 🔹 Tebing Kanan
             $tebingCtrl = new TebingKananController();
             $hasilTebing = $tebingCtrl->proses($pengukuran_id);
-            $result['tebingkanan'] = $hasilTebing !== false
-                ? $hasilTebing
-                : ['success' => false, 'message' => 'Perhitungan Tebing Kanan gagal'];
+            if ($hasilTebing !== false) {
+                $results['TebingKanan'] = "Perhitungan Tebing Kanan berhasil";
+                log_message('debug', "[HitungSemua] TebingKanan OK untuk ID={$pengukuran_id}");
+            } else {
+                $results['TebingKanan'] = "Perhitungan Tebing Kanan gagal";
+                log_message('error', "[HitungSemua] TebingKanan GAGAL | ID={$pengukuran_id}");
+                $allSuccess = false;
+            }
 
             // 🔹 Total Bocoran
             $totalCtrl = new TotalBocoranController();
             $hasilTotal = $totalCtrl->proses($pengukuran_id);
-            $result['totalbocoran'] = $hasilTotal !== false
-                ? $hasilTotal
-                : ['success' => false, 'message' => 'Perhitungan Total Bocoran gagal'];
+            if ($hasilTotal !== false) {
+                $results['TotalBocoran'] = "Perhitungan Total Bocoran berhasil";
+                log_message('debug', "[HitungSemua] TotalBocoran OK untuk ID={$pengukuran_id}");
+            } else {
+                $results['TotalBocoran'] = "Perhitungan Total Bocoran gagal";
+                log_message('error', "[HitungSemua] TotalBocoran GAGAL | ID={$pengukuran_id}");
+                $allSuccess = false;
+            }
 
             // 🔹 Batas Maksimal
             $batasCtrl = new BatasMaksimalController();
             $tmaData = $batasCtrl->getBatasInternal($pengukuran_id);
-
-            if (empty($tmaData) || !isset($tmaData['tma']) || !isset($tmaData['batas'])) {
-                $result['batasmaksimal'] = [
-                    'success' => false,
-                    'message' => "Data TMA waduk tidak ditemukan atau belum diisi untuk pengukuran_id={$pengukuran_id}"
-                ];
-                log_message('debug', "[RumusRembesan] Batas Maksimal tidak ditemukan untuk pengukuran_id={$pengukuran_id}");
+            if (!empty($tmaData) && isset($tmaData['tma'], $tmaData['batas'])) {
+                $results['BatasMaksimal'] = "Perhitungan Batas Maksimal berhasil";
+                log_message('debug', "[HitungSemua] BatasMaksimal OK untuk ID={$pengukuran_id}");
             } else {
-                $result['batasmaksimal'] = [
-                    'success' => true,
-                    'tma_waduk' => (float) $tmaData['tma'],
-                    'batas_maksimal' => (float) $tmaData['batas']
-                ];
-                log_message('debug', "[RumusRembesan] Batas Maksimal diproses: " . json_encode($result['batasmaksimal']));
+                $results['BatasMaksimal'] = "Perhitungan Batas Maksimal gagal: Data tidak ditemukan";
+                log_message('error', "[HitungSemua] BatasMaksimal GAGAL | ID={$pengukuran_id} | Data: " . json_encode($tmaData));
+                $allSuccess = false;
             }
 
-            log_message('debug', "[RumusRembesan] SELESAI proses untuk ID: {$pengukuran_id}");
-            return $result;
-
-        } catch (\Exception $e) {
-            $msg = "❌ Exception di RumusRembesan: " . $e->getMessage();
-            log_message('error', $msg);
-            return ['success' => false, 'message' => $msg];
+        } catch (\Throwable $e) {
+            log_message('error', "[HitungSemua] Exception global | ID={$pengukuran_id} | Error: " . $e->getMessage());
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'Exception: ' . $e->getMessage()
+            ], 500);
         }
+
+        log_message('debug', "[HitungSemua] SELESAI proses untuk ID={$pengukuran_id}");
+
+        return $this->respond([
+            'status'  => $allSuccess ? 'success' : 'partial_error',
+            'pengukuran_id' => $pengukuran_id,
+            'messages' => $results
+        ]);
     }
 }
