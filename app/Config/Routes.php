@@ -29,8 +29,19 @@ $routes->group('api/rembesan', function($routes) {
 
 // === Backup API (baru, field lengkap) ===
 $routes->group('api/rembesan/backup', function($routes) {
+    // Data Input
     $routes->get('pengukuran', 'Rembesan\BackupApi::pengukuran');
     $routes->get('thomson', 'Rembesan\BackupApi::thomson');
     $routes->get('sr', 'Rembesan\BackupApi::sr');
     $routes->get('bocoran', 'Rembesan\BackupApi::bocoran');
+    
+    // Data Hasil Perhitungan (P_)
+    $routes->get('p_batasmaksimal', 'Rembesan\BackupApi::p_batasmaksimal');
+    $routes->get('p_bocoran_baru', 'Rembesan\BackupApi::p_bocoran_baru');
+    $routes->get('p_intigalery', 'Rembesan\BackupApi::p_intigalery');
+    $routes->get('p_spillway', 'Rembesan\BackupApi::p_spillway');
+    $routes->get('p_sr', 'Rembesan\BackupApi::p_sr');
+    $routes->get('p_tebingkanan', 'Rembesan\BackupApi::p_tebingkanan');
+    $routes->get('p_thomson_weir', 'Rembesan\BackupApi::p_thomson_weir');
+    $routes->get('p_totalbocoran', 'Rembesan\BackupApi::p_totalbocoran');
 });
