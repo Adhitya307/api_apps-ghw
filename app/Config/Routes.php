@@ -45,3 +45,9 @@ $routes->group('api/rembesan/backup', function($routes) {
     $routes->get('p_thomson_weir', 'Rembesan\BackupApi::p_thomson_weir');
     $routes->get('p_totalbocoran', 'Rembesan\BackupApi::p_totalbocoran');
 });
+
+$routes->group('rembesan/lookburt', ['namespace' => 'App\Controllers\Rembesan'], function($routes) {
+    $routes->get('hitung/(:num)', 'AnalisaLookBurt::hitung/$1');
+    $routes->get('hitung-semua', 'AnalisaLookBurt::hitungSemua');
+    $routes->get('/', 'AnalisaLookBurt::index');
+});

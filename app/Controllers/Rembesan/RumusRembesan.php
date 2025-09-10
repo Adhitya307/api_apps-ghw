@@ -3,6 +3,7 @@
 namespace App\Controllers\Rembesan;
 
 use App\Controllers\BaseController;
+use App\Helpers\Rembesan\AnalisaLookBurtHelper;
 use App\Controllers\Rembesan\ThomsonController;
 use App\Controllers\Rembesan\SRController;
 use App\Controllers\Rembesan\BocoranBaruController;
@@ -12,10 +13,20 @@ use App\Controllers\Rembesan\TebingKananController;
 use App\Controllers\Rembesan\TotalBocoranController;
 use App\Controllers\Rembesan\BatasMaksimalController;
 use CodeIgniter\API\ResponseTrait;
+use App\Models\Rembesan\AnalisaLookBurtModel;
 
 class RumusRembesan extends BaseController
 {
     use ResponseTrait;
+
+    protected $lookBurtHelper;
+    protected $lookBurtModel;
+
+    public function __construct()
+    {
+        $this->lookBurtHelper = new AnalisaLookBurtHelper();
+        $this->lookBurtModel  = new AnalisaLookBurtModel();
+    }
 
     /**
      * Endpoint API: Hitung semua perhitungan
@@ -42,90 +53,87 @@ class RumusRembesan extends BaseController
             // 🔹 Thomson
             $thomsonCtrl  = new ThomsonController();
             $hasilThomson = $thomsonCtrl->hitung($pengukuran_id, true);
-            if ($hasilThomson['success'] ?? false) {
-                $results['Thomson'] = "Perhitungan Thomson berhasil";
-                log_message('debug', "[HitungSemua] Thomson OK untuk ID={$pengukuran_id}");
-            } else {
-                $results['Thomson'] = "Perhitungan Thomson gagal: " . ($hasilThomson['message'] ?? 'Tidak diketahui');
-                log_message('error', "[HitungSemua] Thomson GAGAL | ID={$pengukuran_id} | Detail: " . json_encode($hasilThomson));
-                $allSuccess = false;
-            }
+            $results['Thomson'] = ($hasilThomson['success'] ?? false)
+                ? "Perhitungan Thomson berhasil"
+                : "Perhitungan Thomson gagal: " . ($hasilThomson['message'] ?? 'Tidak diketahui');
+            if (!($hasilThomson['success'] ?? false)) $allSuccess = false;
 
             // 🔹 SR
             $srCtrl = new SRController();
             $hasilSR = $srCtrl->hitung($pengukuran_id, true);
-            if (($hasilSR['status'] ?? '') === 'success') {
-                $results['SR'] = "Perhitungan SR berhasil";
-                log_message('debug', "[HitungSemua] SR OK untuk ID={$pengukuran_id}");
-            } else {
-                $results['SR'] = "Perhitungan SR gagal: " . ($hasilSR['msg'] ?? 'Data SR tidak ditemukan');
-                log_message('error', "[HitungSemua] SR GAGAL | ID={$pengukuran_id} | Detail: " . json_encode($hasilSR));
-                $allSuccess = false;
-            }
+            $results['SR'] = (($hasilSR['status'] ?? '') === 'success')
+                ? "Perhitungan SR berhasil"
+                : "Perhitungan SR gagal: " . ($hasilSR['msg'] ?? 'Data SR tidak ditemukan');
+            if (($hasilSR['status'] ?? '') !== 'success') $allSuccess = false;
 
             // 🔹 Bocoran Baru
             $bocoranCtrl = new BocoranBaruController();
             $bocoranCtrl->hitungLangsung($pengukuran_id);
             $results['BocoranBaru'] = "Perhitungan Bocoran Baru berhasil (dipicu)";
-            log_message('debug', "[HitungSemua] BocoranBaru OK untuk ID={$pengukuran_id}");
 
             // 🔹 Inti Galery
             $intiCtrl  = new IntiGaleryController();
             $hasilInti = $intiCtrl->proses($pengukuran_id);
-            if ($hasilInti !== false) {
-                $results['IntiGalery'] = "Perhitungan IntiGalery berhasil";
-                log_message('debug', "[HitungSemua] IntiGalery OK untuk ID={$pengukuran_id}");
-            } else {
-                $results['IntiGalery'] = "Perhitungan IntiGalery gagal";
-                log_message('error', "[HitungSemua] IntiGalery GAGAL | ID={$pengukuran_id}");
-                $allSuccess = false;
-            }
+            $results['IntiGalery'] = $hasilInti !== false
+                ? "Perhitungan IntiGalery berhasil"
+                : "Perhitungan IntiGalery gagal";
+            if ($hasilInti === false) $allSuccess = false;
 
             // 🔹 Spillway
             $spillwayCtrl = new SpillwayController();
             $hasilSpillway = $spillwayCtrl->proses($pengukuran_id);
-            if ($hasilSpillway !== false) {
-                $results['Spillway'] = "Perhitungan Spillway berhasil";
-                log_message('debug', "[HitungSemua] Spillway OK untuk ID={$pengukuran_id}");
-            } else {
-                $results['Spillway'] = "Perhitungan Spillway gagal";
-                log_message('error', "[HitungSemua] Spillway GAGAL | ID={$pengukuran_id}");
-                $allSuccess = false;
-            }
+            $results['Spillway'] = $hasilSpillway !== false
+                ? "Perhitungan Spillway berhasil"
+                : "Perhitungan Spillway gagal";
+            if ($hasilSpillway === false) $allSuccess = false;
 
             // 🔹 Tebing Kanan
             $tebingCtrl = new TebingKananController();
             $hasilTebing = $tebingCtrl->proses($pengukuran_id);
-            if ($hasilTebing !== false) {
-                $results['TebingKanan'] = "Perhitungan Tebing Kanan berhasil";
-                log_message('debug', "[HitungSemua] TebingKanan OK untuk ID={$pengukuran_id}");
-            } else {
-                $results['TebingKanan'] = "Perhitungan Tebing Kanan gagal";
-                log_message('error', "[HitungSemua] TebingKanan GAGAL | ID={$pengukuran_id}");
-                $allSuccess = false;
-            }
+            $results['TebingKanan'] = $hasilTebing !== false
+                ? "Perhitungan Tebing Kanan berhasil"
+                : "Perhitungan Tebing Kanan gagal";
+            if ($hasilTebing === false) $allSuccess = false;
 
             // 🔹 Total Bocoran
             $totalCtrl = new TotalBocoranController();
             $hasilTotal = $totalCtrl->proses($pengukuran_id);
-            if ($hasilTotal !== false) {
-                $results['TotalBocoran'] = "Perhitungan Total Bocoran berhasil";
-                log_message('debug', "[HitungSemua] TotalBocoran OK untuk ID={$pengukuran_id}");
-            } else {
-                $results['TotalBocoran'] = "Perhitungan Total Bocoran gagal";
-                log_message('error', "[HitungSemua] TotalBocoran GAGAL | ID={$pengukuran_id}");
-                $allSuccess = false;
-            }
+            $results['TotalBocoran'] = $hasilTotal !== false
+                ? "Perhitungan Total Bocoran berhasil"
+                : "Perhitungan Total Bocoran gagal";
+            if ($hasilTotal === false) $allSuccess = false;
 
             // 🔹 Batas Maksimal
             $batasCtrl = new BatasMaksimalController();
             $tmaData = $batasCtrl->getBatasInternal($pengukuran_id);
             if (!empty($tmaData) && isset($tmaData['tma'], $tmaData['batas'])) {
                 $results['BatasMaksimal'] = "Perhitungan Batas Maksimal berhasil";
-                log_message('debug', "[HitungSemua] BatasMaksimal OK untuk ID={$pengukuran_id}");
             } else {
                 $results['BatasMaksimal'] = "Perhitungan Batas Maksimal gagal: Data tidak ditemukan";
-                log_message('error', "[HitungSemua] BatasMaksimal GAGAL | ID={$pengukuran_id} | Data: " . json_encode($tmaData));
+                $allSuccess = false;
+            }
+
+            // 🔹 Analisa Look Burt (langsung pakai helper)
+            $hasilLookBurt = $this->lookBurtHelper->hitungLookBurt($pengukuran_id);
+
+            if ($hasilLookBurt) {
+                // Bulatkan rembesan_per_m sampai 8 digit
+                $hasilLookBurt['rembesan_per_m'] = round($hasilLookBurt['rembesan_per_m'], 8);
+
+                // Simpan / update ke database
+                $existing = $this->lookBurtModel
+                    ->where('pengukuran_id', $pengukuran_id)
+                    ->first();
+
+                if ($existing) {
+                    $this->lookBurtModel->update($existing['id'], $hasilLookBurt);
+                } else {
+                    $this->lookBurtModel->insert($hasilLookBurt);
+                }
+
+                $results['AnalisaLookBurt'] = "Perhitungan Analisa Look Burt berhasil";
+            } else {
+                $results['AnalisaLookBurt'] = "Perhitungan Analisa Look Burt gagal: Data tidak ditemukan";
                 $allSuccess = false;
             }
 
@@ -140,9 +148,9 @@ class RumusRembesan extends BaseController
         log_message('debug', "[HitungSemua] SELESAI proses untuk ID={$pengukuran_id}");
 
         return $this->respond([
-            'status'  => $allSuccess ? 'success' : 'partial_error',
+            'status'        => $allSuccess ? 'success' : 'partial_error',
             'pengukuran_id' => $pengukuran_id,
-            'messages' => $results
+            'messages'      => $results
         ]);
     }
 }
