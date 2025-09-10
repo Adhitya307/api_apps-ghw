@@ -176,4 +176,18 @@ class BackupApi extends BaseController
             'data'   => $data
         ]);
     }
+
+    // === Analisa Look Burt ===
+public function analisa_look_burt()
+{
+    $model = new \App\Models\Rembesan\AnalisaLookBurtModel();
+    $data = $model->getAll(); // pakai join ke pengukuran agar dapat tanggal & tma_waduk
+
+    return $this->respond([
+        'status'  => 'success',
+        'message' => 'Data analisa look burt berhasil diambil',
+        'data'    => $data
+    ]);
+}
+
 }

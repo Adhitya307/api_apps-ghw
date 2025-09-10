@@ -51,3 +51,5 @@ $routes->group('rembesan/lookburt', ['namespace' => 'App\Controllers\Rembesan'],
     $routes->get('hitung-semua', 'AnalisaLookBurt::hitungSemua');
     $routes->get('/', 'AnalisaLookBurt::index');
 });
+
+$routes->get('api/rembesan/analisa_look_burt', 'Rembesan\BackupApi::analisa_look_burt');
