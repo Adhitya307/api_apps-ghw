@@ -189,41 +189,43 @@ class InputRembesan extends Controller
             }
         }
 
-        // ✅ Cek apakah data sudah ada berdasarkan tahun/bulan/periode
-        $check = $this->db->table("t_data_pengukuran")
-            ->where("tahun", $tahun)
-            ->where("bulan", $bulan)
-            ->where("periode", $periode)
-            ->get()
-            ->getRow();
+// ✅ Cek apakah data sudah ada berdasarkan tahun & bulan SAJA
+$check = $this->db->table("t_data_pengukuran")
+    ->where("tahun", $tahun)
+    ->where("tanggal", $tanggal)
+    //->where("bulan", $bulan)
+    // ->where("periode", $periode) ❌ dihapus agar periode sama tidak dianggap duplikat
+    ->get()
+    ->getRow();
 
-        if ($check) {
-            if ($tma !== null) {
-                if ($check->tma_waduk === null) {
-                    $this->db->table("t_data_pengukuran")
-                        ->where("id", $check->id)
-                        ->update(["tma_waduk" => $tma]);
-
-                    return $this->response->setJSON([
-                        "status" => "success",
-                        "message" => "TMA Waduk berhasil diperbarui.",
-                        "pengukuran_id" => $check->id
-                    ]);
-                } else {
-                    return $this->response->setJSON([
-                        "status" => "info",
-                        "message" => "TMA Waduk sudah ada, tidak diperbarui.",
-                        "pengukuran_id" => $check->id
-                    ]);
-                }
-            }
+if ($check) {
+    if ($tma !== null) {
+        if ($check->tma_waduk === null) {
+            $this->db->table("t_data_pengukuran")
+                ->where("id", $check->id)
+                ->update(["tma_waduk" => $tma]);
 
             return $this->response->setJSON([
+                "status" => "success",
+                "message" => "TMA Waduk berhasil diperbarui.",
+                "pengukuran_id" => $check->id
+            ]);
+        } else {
+            return $this->response->setJSON([
                 "status" => "info",
-                "message" => "Data pengukuran sudah ada.",
+                "message" => "TMA Waduk sudah ada, tidak diperbarui.",
                 "pengukuran_id" => $check->id
             ]);
         }
+    }
+
+    return $this->response->setJSON([
+        "status" => "info",
+        "message" => "Data pengukuran sudah ada.",
+        "pengukuran_id" => $check->id
+    ]);
+}
+
 
         // ✅ STEP 3: Insert baru jika belum ada data
         $insertData = [
