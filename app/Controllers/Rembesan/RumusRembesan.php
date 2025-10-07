@@ -48,6 +48,7 @@ class RumusRembesan extends BaseController
 
         $results = [];
         $allSuccess = true;
+        $hasilLookBurt = null;
 
         try {
             // 🔹 Thomson
@@ -113,14 +114,12 @@ class RumusRembesan extends BaseController
                 $allSuccess = false;
             }
 
-            // 🔹 Analisa Look Burt (langsung pakai helper)
+            // 🔹 Analisa Look Burt
             $hasilLookBurt = $this->lookBurtHelper->hitungLookBurt($pengukuran_id);
 
             if ($hasilLookBurt) {
-                // Bulatkan rembesan_per_m sampai 8 digit
                 $hasilLookBurt['rembesan_per_m'] = round($hasilLookBurt['rembesan_per_m'], 8);
 
-                // Simpan / update ke database
                 $existing = $this->lookBurtModel
                     ->where('pengukuran_id', $pengukuran_id)
                     ->first();
@@ -145,12 +144,38 @@ class RumusRembesan extends BaseController
             ], 500);
         }
 
+        // 🔹 Ambil tanggal dari tabel t_data_pengukuran
+        $db = db_connect();
+        $tanggalData = $db->table('t_data_pengukuran')
+                          ->select('tanggal')
+                          ->where('id', $pengukuran_id)
+                          ->get()
+                          ->getRowArray();
+        $tanggal = $tanggalData['tanggal'] ?? null;
+
+        // 🔹 Hapus nilai ambang batas yang tidak diperlukan
+        if ($hasilLookBurt) {
+            unset($hasilLookBurt['nilai_ambang_ok'], $hasilLookBurt['nilai_ambang_notok']);
+        }
+
         log_message('debug', "[HitungSemua] SELESAI proses untuk ID={$pengukuran_id}");
 
-        return $this->respond([
+        // ✅ Response akhir (sudah disederhanakan agar Android mudah parsing)
+        $response = [
             'status'        => $allSuccess ? 'success' : 'partial_error',
             'pengukuran_id' => $pengukuran_id,
-            'messages'      => $results
-        ]);
+            'tanggal'       => $tanggal,
+            'messages'      => $results,
+        ];
+
+        if ($hasilLookBurt) {
+            $response['data'] = [
+                'rembesan_bendungan' => $hasilLookBurt['rembesan_bendungan'] ?? null,
+                'rembesan_per_m'     => $hasilLookBurt['rembesan_per_m'] ?? null,
+                'keterangan'          => $hasilLookBurt['keterangan'] ?? null,
+            ];
+        }
+
+        return $this->respond($response);
     }
 }
