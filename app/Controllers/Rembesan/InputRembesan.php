@@ -384,54 +384,98 @@ if ($check) {
     }
 }
 
-    private function saveSr($data, $pengukuran_id)
-    {
-        try {
-            $check = $this->srModel->where("pengukuran_id", $pengukuran_id)->first();
-            if ($check) {
-                return $this->response->setJSON([
-                    "status" => "success",
-                    "message" => "Data SR sudah ada."
-                ]);
-            }
-
-            $fields = [1,40,66,68,70,79,81,83,85,92,94,96,98,100,102,104,106];
-            $insertData = ["pengukuran_id" => $pengukuran_id];
-
-            foreach ($fields as $kode) {
-                $insertData["sr_{$kode}_kode"] = $this->getVal("sr_{$kode}_kode", $data) ?? '';
-                $insertData["sr_{$kode}_nilai"] = floatval($this->getVal("sr_{$kode}_nilai", $data) ?? 0);
-            }
-
-            $this->db->transStart();
-            
-            if (!$this->srModel->insert($insertData)) {
-                $this->db->transRollback();
-                return $this->response->setJSON([
-                    "status" => "error",
-                    "message" => "Gagal menyimpan data SR: " . 
-                                implode(', ', $this->srModel->errors())
-                ]);
-            }
-
-            // Trigger SR (berdiri sendiri)
-Events::trigger('dataSR:insert', $pengukuran_id);
-
-            $this->db->transComplete();
-
+private function saveSr($data, $pengukuran_id)
+{
+    try {
+        $check = $this->srModel->where("pengukuran_id", $pengukuran_id)->first();
+        if ($check) {
             return $this->response->setJSON([
                 "status" => "success",
-                "message" => "Data SR berhasil disimpan."
-            ]);
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            log_message('error', '[saveSr] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                "status" => "error",
-                "message" => "Terjadi kesalahan saat menyimpan data SR: " . $e->getMessage()
+                "message" => "Data SR sudah ada."
             ]);
         }
+
+        $fields = [1,40,66,68,70,79,81,83,85,92,94,96,98,100,102,104,106];
+        $insertData = ["pengukuran_id" => $pengukuran_id];
+
+        $filledFields = [];
+        $emptyFields = [];
+
+        foreach ($fields as $kode) {
+            $kodeKey = "sr_{$kode}_kode";
+            $nilaiKey = "sr_{$kode}_nilai";
+
+            $valKode = $this->getVal($kodeKey, $data);
+            $valNilai = $this->getVal($nilaiKey, $data);
+
+            $isFilled = false;
+
+            if ($valKode !== null && $valKode !== '') {
+                $insertData[$kodeKey] = $valKode;
+                $isFilled = true;
+            }
+
+            if ($valNilai !== null && $valNilai !== '' && is_numeric($valNilai)) {
+                $insertData[$nilaiKey] = floatval($valNilai);
+                $isFilled = true;
+            }
+
+            if ($isFilled) {
+                $filledFields[] = "SR {$kode}";
+            } else {
+                $emptyFields[] = "SR {$kode}";
+            }
+        }
+
+        // jika semuanya kosong
+        if (count($filledFields) === 0) {
+            return $this->response->setJSON([
+                "status" => "warning",
+                "message" => "Tidak ada data yang diinput.",
+                "filled" => $filledFields,
+                "empty" => $emptyFields
+            ]);
+        }
+
+        // kirim dulu konfirmasi ke frontend sebelum menyimpan
+        if (!isset($data['confirm']) || $data['confirm'] != 'yes') {
+            return $this->response->setJSON([
+                "status" => "confirm",
+                "message" => "Apakah Anda yakin ingin menyimpan data berikut?",
+                "filled" => $filledFields,
+                "empty" => $emptyFields
+            ]);
+        }
+
+        // lanjut simpan kalau sudah dikonfirmasi
+        $this->db->transStart();
+
+        if (!$this->srModel->insert($insertData)) {
+            $this->db->transRollback();
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal menyimpan data SR: " . 
+                            implode(', ', $this->srModel->errors())
+            ]);
+        }
+
+        Events::trigger('dataSR:insert', $pengukuran_id);
+        $this->db->transComplete();
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "message" => "Data SR berhasil disimpan."
+        ]);
+
+    } catch (\Exception $e) {
+        $this->db->transRollback();
+        log_message('error', '[saveSr] Error: ' . $e->getMessage());
+        return $this->response->setJSON([
+            "status" => "error",
+            "message" => "Terjadi kesalahan saat menyimpan data SR: " . $e->getMessage()
+        ]);
     }
+}
 
     private function saveBocoran($data, $pengukuran_id)
 {
