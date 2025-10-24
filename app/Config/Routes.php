@@ -53,3 +53,12 @@ $routes->group('rembesan/lookburt', ['namespace' => 'App\Controllers\Rembesan'],
 });
 
 $routes->get('api/rembesan/analisa_look_burt', 'Rembesan\BackupApi::analisa_look_burt');
+
+// Dom Body / HDM
+$routes->post('dombody/input', 'DomBody\Inputdombody::index');
+$routes->get('dombody/input', 'DomBody\Inputdombody::index');
+$routes->get('dombody/get-pengukuran', 'DomBody\GetPengukuranHdm::index');
+$routes->post('dombody/get-pengukuran', 'DomBody\GetPengukuranHdm::index');
+
+$routes->post('dombody/hitung/elv600', 'DomBody\Hitungpergerakan::hitungElv600');
+$routes->post('dombody/hitung/elv625', 'DomBody\Hitungpergerakan::hitungElv625');
