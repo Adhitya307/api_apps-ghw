@@ -62,3 +62,20 @@ $routes->post('dombody/get-pengukuran', 'DomBody\GetPengukuranHdm::index');
 
 $routes->post('dombody/hitung/elv600', 'DomBody\Hitungpergerakan::hitungElv600');
 $routes->post('dombody/hitung/elv625', 'DomBody\Hitungpergerakan::hitungElv625');
+
+
+// DomBody API Routes
+$routes->group('api/dambody', function($routes) {
+    $routes->get('pengukuran', 'DomBody\DamBodyApi::pengukuran');
+    $routes->get('pembacaan-625', 'DomBody\DamBodyApi::pembacaan_625');
+    $routes->get('pembacaan-600', 'DomBody\DamBodyApi::pembacaan_600');
+    $routes->get('depth-625', 'DomBody\DamBodyApi::depth_625');
+    $routes->get('depth-600', 'DomBody\DamBodyApi::depth_600');
+    $routes->get('initial-625', 'DomBody\DamBodyApi::initial_625');
+    $routes->get('initial-600', 'DomBody\DamBodyApi::initial_600');
+    $routes->get('pergerakan-625', 'DomBody\DamBodyApi::pergerakan_625');
+    $routes->get('pergerakan-600', 'DomBody\DamBodyApi::pergerakan_600');
+    $routes->get('all-data', 'DomBody\DamBodyApi::all_data');
+    $routes->get('by-pengukuran/(:num)', 'DomBody\DamBodyApi::by_pengukuran/$1');
+    $routes->get('sync', 'DomBody\DamBodyApi::sync');
+});
