@@ -13,6 +13,15 @@ use App\Models\DomBody\InitialReadingElv625Model;
 use App\Models\DomBody\InitialReadingElv600Model;
 use App\Models\DomBody\MPergerakanElv625;
 use App\Models\DomBody\MPergerakanElv600;
+// TAMBAHKAN MODEL AMBANG BATAS
+use App\Models\DomBody\AmbangBatas625H1Model;
+use App\Models\DomBody\AmbangBatas625H2Model;
+use App\Models\DomBody\AmbangBatas625H3Model;
+use App\Models\DomBody\AmbangBatas600H1Model;
+use App\Models\DomBody\AmbangBatas600H2Model;
+use App\Models\DomBody\AmbangBatas600H3Model;
+use App\Models\DomBody\AmbangBatas600H4Model;
+use App\Models\DomBody\AmbangBatas600H5Model;
 
 class DamBodyApi extends BaseController
 {
@@ -135,6 +144,114 @@ class DamBodyApi extends BaseController
         ]);
     }
 
+    // =============================================================
+    // ✅ ENDPOINT AMBANG BATAS BARU
+    // =============================================================
+
+    // === Ambang Batas ELV 625 H1 ===
+    public function ambang_batas_625_h1()
+    {
+        $model = new AmbangBatas625H1Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 625 H1 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 625 H2 ===
+    public function ambang_batas_625_h2()
+    {
+        $model = new AmbangBatas625H2Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 625 H2 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 625 H3 ===
+    public function ambang_batas_625_h3()
+    {
+        $model = new AmbangBatas625H3Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 625 H3 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 600 H1 ===
+    public function ambang_batas_600_h1()
+    {
+        $model = new AmbangBatas600H1Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 600 H1 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 600 H2 ===
+    public function ambang_batas_600_h2()
+    {
+        $model = new AmbangBatas600H2Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 600 H2 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 600 H3 ===
+    public function ambang_batas_600_h3()
+    {
+        $model = new AmbangBatas600H3Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 600 H3 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 600 H4 ===
+    public function ambang_batas_600_h4()
+    {
+        $model = new AmbangBatas600H4Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 600 H4 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
+    // === Ambang Batas ELV 600 H5 ===
+    public function ambang_batas_600_h5()
+    {
+        $model = new AmbangBatas600H5Model();
+        $data = $model->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Data ambang batas ELV 600 H5 berhasil diambil',
+            'data'   => $data
+        ]);
+    }
+
     // === All Data (Complete Dataset) ===
     public function all_data()
     {
@@ -147,6 +264,15 @@ class DamBodyApi extends BaseController
         $initial600Model = new InitialReadingElv600Model();
         $pergerakan625Model = new MPergerakanElv625();
         $pergerakan600Model = new MPergerakanElv600();
+        // TAMBAHKAN MODEL AMBANG BATAS
+        $ambang625H1Model = new AmbangBatas625H1Model();
+        $ambang625H2Model = new AmbangBatas625H2Model();
+        $ambang625H3Model = new AmbangBatas625H3Model();
+        $ambang600H1Model = new AmbangBatas600H1Model();
+        $ambang600H2Model = new AmbangBatas600H2Model();
+        $ambang600H3Model = new AmbangBatas600H3Model();
+        $ambang600H4Model = new AmbangBatas600H4Model();
+        $ambang600H5Model = new AmbangBatas600H5Model();
 
         $data = [
             'pengukuran' => $pengukuranModel->findAll(),
@@ -157,7 +283,16 @@ class DamBodyApi extends BaseController
             'initial_625' => $initial625Model->findAll(),
             'initial_600' => $initial600Model->findAll(),
             'pergerakan_625' => $pergerakan625Model->findAll(),
-            'pergerakan_600' => $pergerakan600Model->findAll()
+            'pergerakan_600' => $pergerakan600Model->findAll(),
+            // TAMBAHKAN DATA AMBANG BATAS
+            'ambang_batas_625_h1' => $ambang625H1Model->findAll(),
+            'ambang_batas_625_h2' => $ambang625H2Model->findAll(),
+            'ambang_batas_625_h3' => $ambang625H3Model->findAll(),
+            'ambang_batas_600_h1' => $ambang600H1Model->findAll(),
+            'ambang_batas_600_h2' => $ambang600H2Model->findAll(),
+            'ambang_batas_600_h3' => $ambang600H3Model->findAll(),
+            'ambang_batas_600_h4' => $ambang600H4Model->findAll(),
+            'ambang_batas_600_h5' => $ambang600H5Model->findAll()
         ];
 
         return $this->respond([
@@ -179,6 +314,15 @@ class DamBodyApi extends BaseController
         $initial600Model = new InitialReadingElv600Model();
         $pergerakan625Model = new MPergerakanElv625();
         $pergerakan600Model = new MPergerakanElv600();
+        // TAMBAHKAN MODEL AMBANG BATAS
+        $ambang625H1Model = new AmbangBatas625H1Model();
+        $ambang625H2Model = new AmbangBatas625H2Model();
+        $ambang625H3Model = new AmbangBatas625H3Model();
+        $ambang600H1Model = new AmbangBatas600H1Model();
+        $ambang600H2Model = new AmbangBatas600H2Model();
+        $ambang600H3Model = new AmbangBatas600H3Model();
+        $ambang600H4Model = new AmbangBatas600H4Model();
+        $ambang600H5Model = new AmbangBatas600H5Model();
 
         $data = [
             'pengukuran' => $pengukuranModel->find($id_pengukuran),
@@ -189,7 +333,16 @@ class DamBodyApi extends BaseController
             'initial_625' => $initial625Model->where('id_pengukuran', $id_pengukuran)->findAll(),
             'initial_600' => $initial600Model->where('id_pengukuran', $id_pengukuran)->findAll(),
             'pergerakan_625' => $pergerakan625Model->where('id_pengukuran', $id_pengukuran)->findAll(),
-            'pergerakan_600' => $pergerakan600Model->where('id_pengukuran', $id_pengukuran)->findAll()
+            'pergerakan_600' => $pergerakan600Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            // TAMBAHKAN DATA AMBANG BATAS
+            'ambang_batas_625_h1' => $ambang625H1Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_625_h2' => $ambang625H2Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_625_h3' => $ambang625H3Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_600_h1' => $ambang600H1Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_600_h2' => $ambang600H2Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_600_h3' => $ambang600H3Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_600_h4' => $ambang600H4Model->where('id_pengukuran', $id_pengukuran)->findAll(),
+            'ambang_batas_600_h5' => $ambang600H5Model->where('id_pengukuran', $id_pengukuran)->findAll()
         ];
 
         return $this->respond([
@@ -213,6 +366,15 @@ class DamBodyApi extends BaseController
         $initial600Model = new InitialReadingElv600Model();
         $pergerakan625Model = new MPergerakanElv625();
         $pergerakan600Model = new MPergerakanElv600();
+        // TAMBAHKAN MODEL AMBANG BATAS
+        $ambang625H1Model = new AmbangBatas625H1Model();
+        $ambang625H2Model = new AmbangBatas625H2Model();
+        $ambang625H3Model = new AmbangBatas625H3Model();
+        $ambang600H1Model = new AmbangBatas600H1Model();
+        $ambang600H2Model = new AmbangBatas600H2Model();
+        $ambang600H3Model = new AmbangBatas600H3Model();
+        $ambang600H4Model = new AmbangBatas600H4Model();
+        $ambang600H5Model = new AmbangBatas600H5Model();
 
         $syncData = [];
 
@@ -227,7 +389,16 @@ class DamBodyApi extends BaseController
                 'initial_625' => $initial625Model->where('updated_at >=', $lastSync)->findAll(),
                 'initial_600' => $initial600Model->where('updated_at >=', $lastSync)->findAll(),
                 'pergerakan_625' => $pergerakan625Model->where('updated_at >=', $lastSync)->findAll(),
-                'pergerakan_600' => $pergerakan600Model->where('updated_at >=', $lastSync)->findAll()
+                'pergerakan_600' => $pergerakan600Model->where('updated_at >=', $lastSync)->findAll(),
+                // TAMBAHKAN DATA AMBANG BATAS
+                'ambang_batas_625_h1' => $ambang625H1Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_625_h2' => $ambang625H2Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_625_h3' => $ambang625H3Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_600_h1' => $ambang600H1Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_600_h2' => $ambang600H2Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_600_h3' => $ambang600H3Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_600_h4' => $ambang600H4Model->where('updated_at >=', $lastSync)->findAll(),
+                'ambang_batas_600_h5' => $ambang600H5Model->where('updated_at >=', $lastSync)->findAll()
             ];
         } else {
             // Jika tidak ada last_sync, ambil semua data
@@ -240,7 +411,16 @@ class DamBodyApi extends BaseController
                 'initial_625' => $initial625Model->findAll(),
                 'initial_600' => $initial600Model->findAll(),
                 'pergerakan_625' => $pergerakan625Model->findAll(),
-                'pergerakan_600' => $pergerakan600Model->findAll()
+                'pergerakan_600' => $pergerakan600Model->findAll(),
+                // TAMBAHKAN DATA AMBANG BATAS
+                'ambang_batas_625_h1' => $ambang625H1Model->findAll(),
+                'ambang_batas_625_h2' => $ambang625H2Model->findAll(),
+                'ambang_batas_625_h3' => $ambang625H3Model->findAll(),
+                'ambang_batas_600_h1' => $ambang600H1Model->findAll(),
+                'ambang_batas_600_h2' => $ambang600H2Model->findAll(),
+                'ambang_batas_600_h3' => $ambang600H3Model->findAll(),
+                'ambang_batas_600_h4' => $ambang600H4Model->findAll(),
+                'ambang_batas_600_h5' => $ambang600H5Model->findAll()
             ];
         }
 

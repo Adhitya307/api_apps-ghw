@@ -75,6 +75,17 @@ $routes->group('api/dambody', function($routes) {
     $routes->get('initial-600', 'DomBody\DamBodyApi::initial_600');
     $routes->get('pergerakan-625', 'DomBody\DamBodyApi::pergerakan_625');
     $routes->get('pergerakan-600', 'DomBody\DamBodyApi::pergerakan_600');
+    
+    // ✅ TAMBAHKAN ROUTE AMBANG BATAS DI SINI
+    $routes->get('ambang-batas-625-h1', 'DomBody\DamBodyApi::ambang_batas_625_h1');
+    $routes->get('ambang-batas-625-h2', 'DomBody\DamBodyApi::ambang_batas_625_h2');
+    $routes->get('ambang-batas-625-h3', 'DomBody\DamBodyApi::ambang_batas_625_h3');
+    $routes->get('ambang-batas-600-h1', 'DomBody\DamBodyApi::ambang_batas_600_h1');
+    $routes->get('ambang-batas-600-h2', 'DomBody\DamBodyApi::ambang_batas_600_h2');
+    $routes->get('ambang-batas-600-h3', 'DomBody\DamBodyApi::ambang_batas_600_h3');
+    $routes->get('ambang-batas-600-h4', 'DomBody\DamBodyApi::ambang_batas_600_h4');
+    $routes->get('ambang-batas-600-h5', 'DomBody\DamBodyApi::ambang_batas_600_h5');
+    
     $routes->get('all-data', 'DomBody\DamBodyApi::all_data');
     $routes->get('by-pengukuran/(:num)', 'DomBody\DamBodyApi::by_pengukuran/$1');
     $routes->get('sync', 'DomBody\DamBodyApi::sync');
