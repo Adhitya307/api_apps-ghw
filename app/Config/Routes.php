@@ -90,3 +90,33 @@ $routes->group('api/dambody', function($routes) {
     $routes->get('by-pengukuran/(:num)', 'DomBody\DamBodyApi::by_pengukuran/$1');
     $routes->get('sync', 'DomBody\DamBodyApi::sync');
 });
+
+// === BTM ROUTES YANG BENAR ===
+$routes->post('btm/input', 'Btm\InputDataBtm::index');
+$routes->get('btm/get-pengukuran', 'Btm\InputDataBtm::getPengukuran');
+$routes->get('btm/get-data', 'Btm\InputDataBtm::getData');
+$routes->get('btm/get-pengukuran-bulan-ini', 'Btm\GetPengukuranBtm::index');
+
+// ✅ ROUTES UNTUK HITUNG BTM - YANG INI SAJA (SUDAH DIPERBAIKI)
+$routes->group('btm', ['namespace' => 'App\Controllers\Btm'], function($routes) {
+    // Hitung BT spesifik - GUNAKAN METHOD YANG ADA DI CONTROLLER
+    $routes->post('hitung/bubbletilt', 'Hitungbtm::hitungBubbleTilt');
+    $routes->get('hitung/bubbletilt', 'Hitungbtm::hitungBubbleTilt');        // ✅ PERBAIKI: hitungBt
+    
+    // Hitung semua BT - GUNAKAN METHOD YANG ADA
+    $routes->post('hitung/semua-bt', 'Hitungbtm::hitungSemua');       // ✅ PERBAIKI: hitungSemua
+    $routes->get('hitung/semua-bt', 'Hitungbtm::hitungSemua');        // ✅ PERBAIKI: hitungSemua
+    
+    // Get data bacaan - TAMBAHKAN METHOD INI DI CONTROLLER
+    $routes->get('hitung/data-bacaan', 'Hitungbtm::getDataBacaan');
+    $routes->post('hitung/data-bacaan', 'Hitungbtm::getDataBacaan');
+    
+    // Get data perhitungan - TAMBAHKAN METHOD INI DI CONTROLLER  
+    $routes->get('hitung/data-perhitungan', 'Hitungbtm::getDataPerhitungan');
+    $routes->post('hitung/data-perhitungan', 'Hitungbtm::getDataPerhitungan');
+    
+    // Health check dan testing - METHOD SUDAH ADA
+    $routes->get('hitung/health', 'Hitungbtm::healthCheck');
+    $routes->get('hitung/debug/(:num)', 'Hitungbtm::debugPerhitungan/$1'); // ✅ GUNAKAN YANG ADA
+    $routes->get('hitung/recalculate-all', 'Hitungbtm::recalculateAll');   // ✅ GUNAKAN YANG ADA
+});
