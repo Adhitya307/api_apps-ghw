@@ -53,6 +53,7 @@ $routes->group('rembesan/lookburt', ['namespace' => 'App\Controllers\Rembesan'],
 });
 
 $routes->get('api/rembesan/analisa_look_burt', 'Rembesan\BackupApi::analisa_look_burt');
+$routes->get('rembesan/get_inti_gallery', 'Rembesan\IntiGaleryController::getIntiGallery');
 
 // Dom Body / HDM
 $routes->post('dombody/input', 'DomBody\Inputdombody::index');
