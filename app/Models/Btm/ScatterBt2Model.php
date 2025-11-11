@@ -80,4 +80,8 @@ class ScatterBt2Model extends Model
     {
         return $this->where('id_pengukuran', $idPengukuran)->first();
     }
+        public function getAllForChart()
+    {
+        return $this->findAll();
+    }
 }

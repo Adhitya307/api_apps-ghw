@@ -164,4 +164,9 @@ class PerhitunganBt1Model extends Model
         
         return "{$degrees}° {$minutes}' {$seconds}\"";
     }
+
+        public function getAllPerhitunganBt1()
+    {
+        return $this->findAll();
+    }
 }

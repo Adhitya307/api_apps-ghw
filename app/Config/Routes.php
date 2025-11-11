@@ -120,3 +120,43 @@ $routes->group('btm', ['namespace' => 'App\Controllers\Btm'], function($routes) 
     $routes->get('hitung/debug/(:num)', 'Hitungbtm::debugPerhitungan/$1'); // ✅ GUNAKAN YANG ADA
     $routes->get('hitung/recalculate-all', 'Hitungbtm::recalculateAll');   // ✅ GUNAKAN YANG ADA
 });
+
+// === BTM API ROUTES - TAMBAHKAN INI ===
+$routes->group('api/btm', ['namespace' => 'App\Controllers\Btm'], function($routes) {
+    // Pengukuran
+    $routes->get('pengukuran', 'BtmApiController::pengukuran');
+    
+    // Bacaan
+    $routes->get('bacaan_bt1', 'BtmApiController::bacaan_bt1');
+    $routes->get('bacaan_bt2', 'BtmApiController::bacaan_bt2');
+    $routes->get('bacaan_bt3', 'BtmApiController::bacaan_bt3');
+    $routes->get('bacaan_bt4', 'BtmApiController::bacaan_bt4');
+    $routes->get('bacaan_bt5', 'BtmApiController::bacaan_bt5');
+    $routes->get('bacaan_bt6', 'BtmApiController::bacaan_bt6');
+    $routes->get('bacaan_bt7', 'BtmApiController::bacaan_bt7');
+    $routes->get('bacaan_bt8', 'BtmApiController::bacaan_bt8');
+    
+    // Perhitungan
+    $routes->get('perhitungan_bt1', 'BtmApiController::perhitungan_bt1');
+    $routes->get('perhitungan_bt2', 'BtmApiController::perhitungan_bt2');
+    $routes->get('perhitungan_bt3', 'BtmApiController::perhitungan_bt3');
+    $routes->get('perhitungan_bt4', 'BtmApiController::perhitungan_bt4');
+    $routes->get('perhitungan_bt5', 'BtmApiController::perhitungan_bt5');
+    $routes->get('perhitungan_bt6', 'BtmApiController::perhitungan_bt6');
+    $routes->get('perhitungan_bt7', 'BtmApiController::perhitungan_bt7');
+    $routes->get('perhitungan_bt8', 'BtmApiController::perhitungan_bt8');
+    
+    // Scatter
+    $routes->get('scatter_bt1', 'BtmApiController::scatter_bt1');
+    $routes->get('scatter_bt2', 'BtmApiController::scatter_bt2');
+    $routes->get('scatter_bt3', 'BtmApiController::scatter_bt3');
+    $routes->get('scatter_bt4', 'BtmApiController::scatter_bt4');
+    $routes->get('scatter_bt6', 'BtmApiController::scatter_bt6');
+    $routes->get('scatter_bt7', 'BtmApiController::scatter_bt7');
+    $routes->get('scatter_bt8', 'BtmApiController::scatter_bt8');
+    
+    // All Data & Sync
+    $routes->get('all_data', 'BtmApiController::all_data');
+    $routes->get('by_pengukuran/(:num)', 'BtmApiController::by_pengukuran/$1');
+    $routes->get('sync', 'BtmApiController::sync');
+});

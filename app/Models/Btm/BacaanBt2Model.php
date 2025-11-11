@@ -21,6 +21,12 @@ class BacaanBt2Model extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
+    // ✅ TAMBAHKAN METHOD INI - YANG DIPANGGIL DI CONTROLLER
+    public function getAllBacaan()
+    {
+        return $this->findAll();
+    }
+
     public function getByPengukuran($id_pengukuran)
     {
         return $this->where('id_pengukuran', $id_pengukuran)->first();
