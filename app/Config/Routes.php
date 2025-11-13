@@ -7,18 +7,17 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+// ======================================================================
+// REMBESAN ROUTES
+// ======================================================================
 $routes->get('rembesan/check-connection', 'Rembesan\CheckConnection::index');
-
 $routes->post('rembesan/input', 'Rembesan\InputRembesan::index');
-
 $routes->get('rembesan/get_pengukuran', 'Rembesan\GetPengukuran::index');
-
 $routes->get('rembesan/cek-data', 'Rembesan\CekDataController::index');
 
 // Routes untuk hitung Thomson
 $routes->get('rembesan/hitungthomson/hitungSemua', 'Rembesan\HitungThomson::hitungSemua');
 $routes->get('rembesan/hitungthomson/cekStatus', 'Rembesan\HitungThomson::cekStatus');
-
 $routes->post('rembesan/Rumus-Rembesan', 'Rembesan\RumusRembesan::hitungSemua');
 
 // === History API (lama, hanya id + tanggal) ===
@@ -55,7 +54,9 @@ $routes->group('rembesan/lookburt', ['namespace' => 'App\Controllers\Rembesan'],
 $routes->get('api/rembesan/analisa_look_burt', 'Rembesan\BackupApi::analisa_look_burt');
 $routes->get('rembesan/get_inti_gallery', 'Rembesan\IntiGaleryController::getIntiGallery');
 
-// Dom Body / HDM
+// ======================================================================
+// DOM BODY / HDM ROUTES
+// ======================================================================
 $routes->post('dombody/input', 'DomBody\Inputdombody::index');
 $routes->get('dombody/input', 'DomBody\Inputdombody::index');
 $routes->get('dombody/get-pengukuran', 'DomBody\GetPengukuranHdm::index');
@@ -63,7 +64,6 @@ $routes->post('dombody/get-pengukuran', 'DomBody\GetPengukuranHdm::index');
 
 $routes->post('dombody/hitung/elv600', 'DomBody\Hitungpergerakan::hitungElv600');
 $routes->post('dombody/hitung/elv625', 'DomBody\Hitungpergerakan::hitungElv625');
-
 
 // DomBody API Routes
 $routes->group('api/dambody', function($routes) {
@@ -92,7 +92,9 @@ $routes->group('api/dambody', function($routes) {
     $routes->get('sync', 'DomBody\DamBodyApi::sync');
 });
 
-// === BTM ROUTES YANG BENAR ===
+// ======================================================================
+// BTM ROUTES
+// ======================================================================
 $routes->post('btm/input', 'Btm\InputDataBtm::index');
 $routes->get('btm/get-pengukuran', 'Btm\InputDataBtm::getPengukuran');
 $routes->get('btm/get-data', 'Btm\InputDataBtm::getData');
@@ -160,4 +162,25 @@ $routes->group('api/btm', ['namespace' => 'App\Controllers\Btm'], function($rout
     $routes->get('all_data', 'BtmApiController::all_data');
     $routes->get('by_pengukuran/(:num)', 'BtmApiController::by_pengukuran/$1');
     $routes->get('sync', 'BtmApiController::sync');
+});
+
+// ======================================================================
+// EXTENSO ROUTES
+// ======================================================================
+$routes->group('exstenso', function($routes) {
+    
+    // Input Data Exstenso
+    $routes->post('inputdata', 'Exstenso\InputDataExstenso::index');
+    $routes->get('inputdata', 'Exstenso\InputDataExstenso::index'); // Untuk testing GET
+    
+    // Get Pengukuran Exstenso
+    $routes->get('getpengukuran', 'Exstenso\GetPengukuranExstenso::index');
+    $routes->get('getpengukuran/getAll', 'Exstenso\GetPengukuranExstenso::getAll');
+    $routes->get('getpengukuran/getByPeriod', 'Exstenso\GetPengukuranExstenso::getByPeriod');
+    $routes->get('getpengukuran/getById/(:num)', 'Exstenso\GetPengukuranExstenso::getById/$1');
+    $routes->get('getpengukuran/getById', 'Exstenso\GetPengukuranExstenso::getById');
+    
+    // Get Data Specific (pembacaan, readings, dll)
+    $routes->get('getdata', 'Exstenso\InputDataExstenso::getData');
+    
 });
