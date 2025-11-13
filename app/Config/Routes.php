@@ -184,3 +184,9 @@ $routes->group('exstenso', function($routes) {
     $routes->get('getdata', 'Exstenso\InputDataExstenso::getData');
     
 });
+
+$routes->post('exstenso/hitung-deformasi-ex1', 'Exstenso\PerhitunganExtenso::HitungDeformasiEx1');
+$routes->post('exstenso/hitung-deformasi-ex2', 'Exstenso\PerhitunganExtenso::HitungDeformasiEx2');
+$routes->post('exstenso/hitung-deformasi-ex3', 'Exstenso\PerhitunganExtenso::HitungDeformasiEx3');
+$routes->post('exstenso/hitung-deformasi-ex4', 'Exstenso\PerhitunganExtenso::HitungDeformasiEx4');
+$routes->post('exstenso/hitung-semua-deformasi', 'Exstenso\PerhitunganExtenso::HitungSemuaDeformasi');
