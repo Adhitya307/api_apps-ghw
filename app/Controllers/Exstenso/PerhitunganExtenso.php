@@ -50,6 +50,16 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
 
+        // CEK APAKAH SUDAH ADA DATA DEFORMASI
+        $existingDeformasi = $this->deformasiEx1Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($existingDeformasi) {
+            return $this->response->setJSON([
+                'status' => 'info',
+                'message' => 'Data deformasi Ex1 untuk pengukuran ini sudah ada',
+                'data' => $existingDeformasi
+            ]);
+        }
+
         // Ambil data dari tabel pembacaan Ex1
         $pembacaan = $this->pembacaanEx1Model->where('id_pengukuran', $idPengukuran)->first();
 
@@ -101,6 +111,16 @@ class PerhitunganExtenso extends BaseController
         }
 
         $idPengukuran = $data['id_pengukuran'];
+
+        // CEK APAKAH SUDAH ADA DATA DEFORMASI
+        $existingDeformasi = $this->deformasiEx2Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($existingDeformasi) {
+            return $this->response->setJSON([
+                'status' => 'info',
+                'message' => 'Data deformasi Ex2 untuk pengukuran ini sudah ada',
+                'data' => $existingDeformasi
+            ]);
+        }
 
         // Ambil data dari tabel pembacaan Ex2
         $pembacaan = $this->pembacaanEx2Model->where('id_pengukuran', $idPengukuran)->first();
@@ -154,6 +174,16 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
 
+        // CEK APAKAH SUDAH ADA DATA DEFORMASI
+        $existingDeformasi = $this->deformasiEx3Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($existingDeformasi) {
+            return $this->response->setJSON([
+                'status' => 'info',
+                'message' => 'Data deformasi Ex3 untuk pengukuran ini sudah ada',
+                'data' => $existingDeformasi
+            ]);
+        }
+
         // Ambil data dari tabel pembacaan Ex3
         $pembacaan = $this->pembacaanEx3Model->where('id_pengukuran', $idPengukuran)->first();
 
@@ -205,6 +235,16 @@ class PerhitunganExtenso extends BaseController
         }
 
         $idPengukuran = $data['id_pengukuran'];
+
+        // CEK APAKAH SUDAH ADA DATA DEFORMASI
+        $existingDeformasi = $this->deformasiEx4Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($existingDeformasi) {
+            return $this->response->setJSON([
+                'status' => 'info',
+                'message' => 'Data deformasi Ex4 untuk pengukuran ini sudah ada',
+                'data' => $existingDeformasi
+            ]);
+        }
 
         // Ambil data dari tabel pembacaan Ex4
         $pembacaan = $this->pembacaanEx4Model->where('id_pengukuran', $idPengukuran)->first();
@@ -265,85 +305,109 @@ class PerhitunganExtenso extends BaseController
         // Hitung Deformasi Ex1
         $pembacaanEx1 = $this->pembacaanEx1Model->where('id_pengukuran', $idPengukuran)->first();
         if ($pembacaanEx1) {
-            $pemb_awal10 = 35.00;
-            $pemb_awal20 = 40.95;
-            $pemb_awal30 = 29.80;
+            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex1
+            $existingEx1 = $this->deformasiEx1Model->where('id_pengukuran', $idPengukuran)->first();
+            if (!$existingEx1) {
+                $pemb_awal10 = 35.00;
+                $pemb_awal20 = 40.95;
+                $pemb_awal30 = 29.80;
 
-            $hasilEx1 = [
-                'id_pengukuran' => $idPengukuran,
-                'pemb_awal10'   => $pemb_awal10,
-                'pemb_awal20'   => $pemb_awal20,
-                'pemb_awal30'   => $pemb_awal30,
-                'deformasi_10'  => $pembacaanEx1['pembacaan_10'] - $pemb_awal10,
-                'deformasi_20'  => $pembacaanEx1['pembacaan_20'] - $pemb_awal20,
-                'deformasi_30'  => $pembacaanEx1['pembacaan_30'] - $pemb_awal30,
-            ];
+                $hasilEx1 = [
+                    'id_pengukuran' => $idPengukuran,
+                    'pemb_awal10'   => $pemb_awal10,
+                    'pemb_awal20'   => $pemb_awal20,
+                    'pemb_awal30'   => $pemb_awal30,
+                    'deformasi_10'  => $pembacaanEx1['pembacaan_10'] - $pemb_awal10,
+                    'deformasi_20'  => $pembacaanEx1['pembacaan_20'] - $pemb_awal20,
+                    'deformasi_30'  => $pembacaanEx1['pembacaan_30'] - $pemb_awal30,
+                ];
 
-            $insertIdEx1 = $this->deformasiEx1Model->insert($hasilEx1);
-            $results['ex1'] = $this->deformasiEx1Model->find($insertIdEx1);
+                $insertIdEx1 = $this->deformasiEx1Model->insert($hasilEx1);
+                $results['ex1'] = $this->deformasiEx1Model->find($insertIdEx1);
+            } else {
+                $results['ex1'] = $existingEx1;
+            }
         }
 
         // Hitung Deformasi Ex2
         $pembacaanEx2 = $this->pembacaanEx2Model->where('id_pengukuran', $idPengukuran)->first();
         if ($pembacaanEx2) {
-            $pemb_awal10 = 22.60;
-            $pemb_awal20 = 23.70;
-            $pemb_awal30 = 30.75;
+            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex2
+            $existingEx2 = $this->deformasiEx2Model->where('id_pengukuran', $idPengukuran)->first();
+            if (!$existingEx2) {
+                $pemb_awal10 = 22.60;
+                $pemb_awal20 = 23.70;
+                $pemb_awal30 = 30.75;
 
-            $hasilEx2 = [
-                'id_pengukuran' => $idPengukuran,
-                'pemb_awal10'   => $pemb_awal10,
-                'pemb_awal20'   => $pemb_awal20,
-                'pemb_awal30'   => $pemb_awal30,
-                'deformasi_10'  => $pembacaanEx2['pembacaan_10'] - $pemb_awal10,
-                'deformasi_20'  => $pembacaanEx2['pembacaan_20'] - $pemb_awal20,
-                'deformasi_30'  => $pembacaanEx2['pembacaan_30'] - $pemb_awal30,
-            ];
+                $hasilEx2 = [
+                    'id_pengukuran' => $idPengukuran,
+                    'pemb_awal10'   => $pemb_awal10,
+                    'pemb_awal20'   => $pemb_awal20,
+                    'pemb_awal30'   => $pemb_awal30,
+                    'deformasi_10'  => $pembacaanEx2['pembacaan_10'] - $pemb_awal10,
+                    'deformasi_20'  => $pembacaanEx2['pembacaan_20'] - $pemb_awal20,
+                    'deformasi_30'  => $pembacaanEx2['pembacaan_30'] - $pemb_awal30,
+                ];
 
-            $insertIdEx2 = $this->deformasiEx2Model->insert($hasilEx2);
-            $results['ex2'] = $this->deformasiEx2Model->find($insertIdEx2);
+                $insertIdEx2 = $this->deformasiEx2Model->insert($hasilEx2);
+                $results['ex2'] = $this->deformasiEx2Model->find($insertIdEx2);
+            } else {
+                $results['ex2'] = $existingEx2;
+            }
         }
 
         // Hitung Deformasi Ex3
         $pembacaanEx3 = $this->pembacaanEx3Model->where('id_pengukuran', $idPengukuran)->first();
         if ($pembacaanEx3) {
-            $pemb_awal10 = 37.75;
-            $pemb_awal20 = 39.15;
-            $pemb_awal30 = 41.40;
+            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex3
+            $existingEx3 = $this->deformasiEx3Model->where('id_pengukuran', $idPengukuran)->first();
+            if (!$existingEx3) {
+                $pemb_awal10 = 37.75;
+                $pemb_awal20 = 39.15;
+                $pemb_awal30 = 41.40;
 
-            $hasilEx3 = [
-                'id_pengukuran' => $idPengukuran,
-                'pemb_awal10'   => $pemb_awal10,
-                'pemb_awal20'   => $pemb_awal20,
-                'pemb_awal30'   => $pemb_awal30,
-                'deformasi_10'  => $pembacaanEx3['pembacaan_10'] - $pemb_awal10,
-                'deformasi_20'  => $pembacaanEx3['pembacaan_20'] - $pemb_awal20,
-                'deformasi_30'  => $pembacaanEx3['pembacaan_30'] - $pemb_awal30,
-            ];
+                $hasilEx3 = [
+                    'id_pengukuran' => $idPengukuran,
+                    'pemb_awal10'   => $pemb_awal10,
+                    'pemb_awal20'   => $pemb_awal20,
+                    'pemb_awal30'   => $pemb_awal30,
+                    'deformasi_10'  => $pembacaanEx3['pembacaan_10'] - $pemb_awal10,
+                    'deformasi_20'  => $pembacaanEx3['pembacaan_20'] - $pemb_awal20,
+                    'deformasi_30'  => $pembacaanEx3['pembacaan_30'] - $pemb_awal30,
+                ];
 
-            $insertIdEx3 = $this->deformasiEx3Model->insert($hasilEx3);
-            $results['ex3'] = $this->deformasiEx3Model->find($insertIdEx3);
+                $insertIdEx3 = $this->deformasiEx3Model->insert($hasilEx3);
+                $results['ex3'] = $this->deformasiEx3Model->find($insertIdEx3);
+            } else {
+                $results['ex3'] = $existingEx3;
+            }
         }
 
         // Hitung Deformasi Ex4
         $pembacaanEx4 = $this->pembacaanEx4Model->where('id_pengukuran', $idPengukuran)->first();
         if ($pembacaanEx4) {
-            $pemb_awal10 = 33.80;
-            $pemb_awal20 = 29.30;
-            $pemb_awal30 = 48.95;
+            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex4
+            $existingEx4 = $this->deformasiEx4Model->where('id_pengukuran', $idPengukuran)->first();
+            if (!$existingEx4) {
+                $pemb_awal10 = 33.80;
+                $pemb_awal20 = 29.30;
+                $pemb_awal30 = 48.95;
 
-            $hasilEx4 = [
-                'id_pengukuran' => $idPengukuran,
-                'pemb_awal10'   => $pemb_awal10,
-                'pemb_awal20'   => $pemb_awal20,
-                'pemb_awal30'   => $pemb_awal30,
-                'deformasi_10'  => $pembacaanEx4['pembacaan_10'] - $pemb_awal10,
-                'deformasi_20'  => $pembacaanEx4['pembacaan_20'] - $pemb_awal20,
-                'deformasi_30'  => $pembacaanEx4['pembacaan_30'] - $pemb_awal30,
-            ];
+                $hasilEx4 = [
+                    'id_pengukuran' => $idPengukuran,
+                    'pemb_awal10'   => $pemb_awal10,
+                    'pemb_awal20'   => $pemb_awal20,
+                    'pemb_awal30'   => $pemb_awal30,
+                    'deformasi_10'  => $pembacaanEx4['pembacaan_10'] - $pemb_awal10,
+                    'deformasi_20'  => $pembacaanEx4['pembacaan_20'] - $pemb_awal20,
+                    'deformasi_30'  => $pembacaanEx4['pembacaan_30'] - $pemb_awal30,
+                ];
 
-            $insertIdEx4 = $this->deformasiEx4Model->insert($hasilEx4);
-            $results['ex4'] = $this->deformasiEx4Model->find($insertIdEx4);
+                $insertIdEx4 = $this->deformasiEx4Model->insert($hasilEx4);
+                $results['ex4'] = $this->deformasiEx4Model->find($insertIdEx4);
+            } else {
+                $results['ex4'] = $existingEx4;
+            }
         }
 
         // Response
