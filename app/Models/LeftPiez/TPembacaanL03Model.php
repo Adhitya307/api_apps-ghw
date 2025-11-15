@@ -9,4 +9,9 @@ class TPembacaanL03Model extends Model
     protected $table = 't_pembacaan_L_03';
     protected $primaryKey = 'id_pembacaan';
     protected $allowedFields = ['id_pengukuran', 'feet', 'inch'];
+    
+    protected $validationRules = [
+        'feet' => 'permit_empty|string',
+        'inch' => 'permit_empty|decimal'
+    ];
 }
