@@ -190,3 +190,22 @@ $routes->post('exstenso/hitung-deformasi-ex2', 'Exstenso\PerhitunganExtenso::Hit
 $routes->post('exstenso/hitung-deformasi-ex3', 'Exstenso\PerhitunganExtenso::HitungDeformasiEx3');
 $routes->post('exstenso/hitung-deformasi-ex4', 'Exstenso\PerhitunganExtenso::HitungDeformasiEx4');
 $routes->post('exstenso/hitung-semua-deformasi', 'Exstenso\PerhitunganExtenso::HitungSemuaDeformasi');
+
+
+// Routes untuk Left Piezometer
+$routes->group('leftpiez', function($routes) {
+    // Input Data - POST untuk semua operasi
+    $routes->post('inputdata', 'Leftpiez\InputdataLeftpiez::index');
+    
+    // Get Data Pengukuran - GET (berbagai metode)
+    $routes->get('getpengukuran', 'Leftpiez\GetPengukuranLeftpiez::index'); // Data bulan ini
+    $routes->get('getpengukuran/all', 'Leftpiez\GetPengukuranLeftpiez::getAll'); // Semua data
+    $routes->get('getpengukuran/period', 'Leftpiez\GetPengukuranLeftpiez::getByPeriod'); // By period
+    $routes->get('getpengukuran/(:num)', 'Leftpiez\GetPengukuranLeftpiez::getById/$1'); // By ID
+    
+    // Get Data Pembacaan - GET
+    $routes->get('getdata', 'Leftpiez\InputdataLeftpiez::getData');
+    
+    // Get All Data Pembacaan - GET
+    $routes->get('getalldata', 'Leftpiez\InputdataLeftpiez::getAllData');
+});

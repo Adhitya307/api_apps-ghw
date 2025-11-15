@@ -1,0 +1,580 @@
+<?php
+
+namespace App\Controllers\Leftpiez;
+
+use CodeIgniter\Controller;
+use Config\Database;
+use App\Models\LeftPiez\TPengukuranLeftpiezModel;
+use App\Models\LeftPiez\TPembacaanL01Model;
+use App\Models\LeftPiez\TPembacaanL02Model;
+use App\Models\LeftPiez\TPembacaanL03Model;
+use App\Models\LeftPiez\TPembacaanL04Model;
+use App\Models\LeftPiez\TPembacaanL05Model;
+use App\Models\LeftPiez\TPembacaanL06Model;
+use App\Models\LeftPiez\TPembacaanL07Model;
+use App\Models\LeftPiez\TPembacaanL08Model;
+use App\Models\LeftPiez\TPembacaanL09Model;
+use App\Models\LeftPiez\TPembacaanL10Model;
+use App\Models\LeftPiez\TPembacaanSpz02Model;
+
+class InputdataLeftpiez extends Controller
+{
+    protected $db;
+    protected $pengukuranModel;
+    protected $pembacaanModels;
+
+    public function __construct()
+    {
+        // Konfigurasi database db_left_piez
+        $this->db = Database::connect('db_left_piez');
+        
+        $this->pengukuranModel = new TPengukuranLeftpiezModel();
+        
+        // Inisialisasi semua model pembacaan
+        $this->pembacaanModels = [
+            'L01' => new TPembacaanL01Model(),
+            'L02' => new TPembacaanL02Model(),
+            'L03' => new TPembacaanL03Model(),
+            'L04' => new TPembacaanL04Model(),
+            'L05' => new TPembacaanL05Model(),
+            'L06' => new TPembacaanL06Model(),
+            'L07' => new TPembacaanL07Model(),
+            'L08' => new TPembacaanL08Model(),
+            'L09' => new TPembacaanL09Model(),
+            'L10' => new TPembacaanL10Model(),
+            'SPZ02' => new TPembacaanSpz02Model()
+        ];
+
+        // Support CORS untuk testing Android / Postman
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization");
+        
+        // Handle preflight request
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            exit;
+        }
+    }
+
+    private function getVal($key, $data)
+    {
+        return isset($data[$key]) && trim($data[$key]) !== '' ? $data[$key] : null;
+    }
+
+    public function index()
+    {
+        try {
+            // Log raw input untuk debugging
+            $rawInput = file_get_contents('php://input');
+            log_message('debug', '[InputdataLeftpiez] Raw input: ' . $rawInput);
+            
+            $data = json_decode($rawInput, true);
+            
+            if (!$data || json_last_error() !== JSON_ERROR_NONE) {
+                $data = $this->request->getPost();
+            }
+
+            if (!$data) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Tidak ada data dikirim!"
+                ]);
+            }
+
+            $mode = $this->getVal("mode", $data);
+            $pengukuran_id = $this->getVal("pengukuran_id", $data);
+            $temp_id = $this->getVal("temp_id", $data);
+
+            log_message('debug', "[InputdataLeftpiez] mode={$mode}, pengukuran_id={$pengukuran_id}, temp_id={$temp_id}");
+
+            if (!$mode) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Parameter mode wajib dikirim!"
+                ]);
+            }
+
+            // Mode update_dma sebelum mode pengukuran
+            if ($mode === "update_dma") {
+                return $this->updateDMAPengukuran($data, $pengukuran_id);
+            }
+
+            if ($mode === "pengukuran") {
+                return $this->savePengukuran($data, $temp_id);
+            }
+
+            if ((!$pengukuran_id || !is_numeric($pengukuran_id)) && $temp_id) {
+                $row = $this->db->table("t_pengukuran_leftpiez")
+                    ->where("temp_id", $temp_id)
+                    ->get()
+                    ->getRow();
+                if ($row) {
+                    $pengukuran_id = $row->id_pengukuran;
+                    log_message('debug', "[InputdataLeftpiez] pengukuran_id ditemukan dari temp_id={$temp_id} → id={$pengukuran_id}");
+                } else {
+                    return $this->response->setJSON([
+                        "status" => "error",
+                        "message" => "Tidak ditemukan pengukuran dari temp_id: " . $temp_id
+                    ]);
+                }
+            }
+
+            if (!$pengukuran_id || !is_numeric($pengukuran_id)) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "pengukuran_id wajib dikirim atau ditemukan dari temp_id"
+                ]);
+            }
+
+            $cekPengukuran = $this->pengukuranModel->find($pengukuran_id);
+            if (!$cekPengukuran) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pengukuran dengan ID $pengukuran_id tidak ditemukan!"
+                ]);
+            }
+
+            // Handle mode pembacaan untuk semua L01-L10 dan SPZ02
+            if (strpos($mode, "pembacaan_") === 0) {
+                $lokasi = strtoupper(str_replace("pembacaan_", "", $mode));
+                return $this->savePembacaan($data, $pengukuran_id, $lokasi);
+            }
+
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Mode tidak dikenali: $mode"
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[InputdataLeftpiez] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Terjadi kesalahan server: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    private function savePengukuran($data, $temp_id)
+    {
+        try {
+            log_message('debug', '[savePengukuran] Data received: ' . json_encode($data));
+            
+            $pengukuran_id = $this->getVal('pengukuran_id', $data);
+            $tahun   = $this->getVal('tahun', $data);
+            $periode = $this->getVal('periode', $data);
+            $tanggal = $this->getVal('tanggal', $data);
+            $dma     = $this->getVal('dma', $data);
+
+            log_message('debug', "[savePengukuran] Parsed: tahun=$tahun, periode=$periode, tanggal=$tanggal, dma=$dma");
+
+            // Jika tidak ada pengukuran_id → wajib tahun & tanggal
+            if (!$tahun || !$tanggal) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Tahun dan Tanggal wajib diisi!"
+                ]);
+            }
+
+            // Format periode
+            if ($periode && !preg_match('/^TW-/i', $periode)) {
+                if (is_numeric($periode)) {
+                    $periode = "TW-" . $periode;
+                }
+            }
+
+            // PERBAIKAN: Untuk menghindari duplikasi, gunakan temp_id sebagai pembeda
+            if (!$pengukuran_id && $temp_id) {
+                // Cek apakah sudah ada data dengan temp_id yang sama
+                $checkByTempId = $this->db->table("t_pengukuran_leftpiez")
+                    ->where("temp_id", $temp_id)
+                    ->get()
+                    ->getRow();
+
+                if ($checkByTempId) {
+                    return $this->response->setJSON([
+                        "status" => "success",
+                        "message" => "Data pengukuran berhasil digunakan.",
+                        "pengukuran_id" => $checkByTempId->id_pengukuran
+                    ]);
+                }
+            }
+
+            // Cek apakah ini UPDATE atau CREATE
+            if ($pengukuran_id && is_numeric($pengukuran_id)) {
+                // MODE UPDATE: Cek apakah pengukuran_id ada di database
+                $check = $this->db->table("t_pengukuran_leftpiez")
+                    ->where("id_pengukuran", $pengukuran_id)
+                    ->get()
+                    ->getRow();
+
+                if ($check) {
+                    // UPDATE data yang sudah ada
+                    $updateData = [];
+                    if ($dma !== null) $updateData["dma"] = $dma;
+                    if ($periode !== null) $updateData["periode"] = $periode;
+                    if ($temp_id !== null) $updateData["temp_id"] = $temp_id;
+                    
+                    // Hanya update jika ada field yang berubah
+                    if (!empty($updateData)) {
+                        $this->db->table("t_pengukuran_leftpiez")
+                            ->where("id_pengukuran", $pengukuran_id)
+                            ->update($updateData);
+                        
+                        log_message('debug', "[savePengukuran] Updated pengukuran ID: $pengukuran_id");
+                    }
+
+                    return $this->response->setJSON([
+                        "status" => "success",
+                        "message" => "Data pengukuran berhasil diperbarui.",
+                        "pengukuran_id" => $pengukuran_id
+                    ]);
+                } else {
+                    return $this->response->setJSON([
+                        "status" => "error",
+                        "message" => "Data pengukuran dengan ID $pengukuran_id tidak ditemukan!"
+                    ]);
+                }
+            } else {
+                // MODE CREATE: Cek duplikasi dengan logika yang lebih longgar
+                // PERBAIKAN: Hanya cek berdasarkan tahun dan periode saja, tidak termasuk tanggal
+                $check = $this->db->table("t_pengukuran_leftpiez")
+                    ->where("tahun", $tahun)
+                    ->where("periode", $periode)
+                    ->get()
+                    ->getRow();
+
+                log_message('debug', "[savePengukuran] Check existing: " . ($check ? 'exists' : 'not exists'));
+
+                if ($check) {
+                    // PERBAIKAN: Jika data sudah ada, kembalikan ID yang sudah ada tanpa error
+                    return $this->response->setJSON([
+                        "status" => "success",
+                        "message" => "Data pengukuran sudah ada dan berhasil digunakan.",
+                        "pengukuran_id" => $check->id_pengukuran
+                    ]);
+                }
+
+                // Insert baru jika belum ada data
+                $insertData = [
+                    "tahun" => $tahun,
+                    "periode" => $periode,
+                    "tanggal" => $tanggal,
+                    "dma" => $dma,
+                    "temp_id" => $temp_id
+                ];
+
+                log_message('debug', '[savePengukuran] Insert data: ' . json_encode($insertData));
+
+                $this->db->transStart();
+
+                if (!$this->pengukuranModel->insert($insertData)) {
+                    $error = $this->pengukuranModel->errors();
+                    log_message('error', '[savePengukuran] Model error: ' . json_encode($error));
+                    $this->db->transRollback();
+                    return $this->response->setJSON([
+                        "status" => "error",
+                        "message" => "Gagal menyimpan data pengukuran: " . implode(', ', $error)
+                    ]);
+                }
+
+                $pengukuran_id = $this->pengukuranModel->getInsertID();
+                log_message('debug', "[savePengukuran] Insert success, ID: $pengukuran_id");
+
+                $this->db->transComplete();
+
+                return $this->response->setJSON([
+                    "status" => "success",
+                    "message" => "Data pengukuran berhasil dibuat.",
+                    "pengukuran_id" => $pengukuran_id
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            log_message('error', '[savePengukuran] Exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk update DMA saja
+     */
+    private function updateDMAPengukuran($data, $pengukuran_id)
+    {
+        try {
+            $dma = $this->getVal('dma', $data);
+            
+            if (!$pengukuran_id) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "pengukuran_id diperlukan untuk update DMA!"
+                ]);
+            }
+
+            // Cek apakah data pengukuran ada
+            $existing = $this->db->table("t_pengukuran_leftpiez")
+                ->where("id_pengukuran", $pengukuran_id)
+                ->get()
+                ->getRow();
+
+            if (!$existing) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pengukuran dengan ID $pengukuran_id tidak ditemukan!"
+                ]);
+            }
+
+            // Update DMA
+            $this->db->table("t_pengukuran_leftpiez")
+                ->where("id_pengukuran", $pengukuran_id)
+                ->update(["dma" => $dma]);
+
+            log_message('debug', "[updateDMAPengukuran] DMA updated for ID: $pengukuran_id, DMA: $dma");
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "message" => "Data DMA berhasil diperbarui.",
+                "pengukuran_id" => $pengukuran_id
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[updateDMAPengukuran] Exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Terjadi kesalahan saat update DMA: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data Pembacaan semua lokasi (L01-L10 dan SPZ02)
+     */
+    private function savePembacaan($data, $pengukuran_id, $lokasi)
+    {
+        try {
+            if (!$pengukuran_id) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Silakan pilih data pengukuran terlebih dahulu!"
+                ]);
+            }
+
+            // Validasi lokasi
+            if (!array_key_exists($lokasi, $this->pembacaanModels)) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Lokasi tidak valid: $lokasi"
+                ]);
+            }
+
+            $model = $this->pembacaanModels[$lokasi];
+
+            // Ambil nilai feet dan inch
+            $feet = $this->getVal('feet', $data);
+            $inch = $this->getVal('inch', $data);
+
+            // Validasi minimal satu nilai harus diisi
+            if ($feet === null && $inch === null) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Minimal satu nilai (feet atau inch) harus diisi!"
+                ]);
+            }
+
+            $insertData = [
+                "id_pengukuran" => $pengukuran_id,
+                "feet" => $feet,
+                "inch" => $inch
+            ];
+
+            // Hapus null values
+            $insertData = array_filter($insertData, function($value) {
+                return $value !== null;
+            });
+
+            // Cek apakah data sudah ada
+            $existing = $model->where("id_pengukuran", $pengukuran_id)->first();
+
+            $this->db->transStart();
+
+            if ($existing) {
+                // Jika data sudah ada, update
+                $model->update($existing[$model->primaryKey], $insertData);
+                $msg = "Data pembacaan $lokasi berhasil diperbarui.";
+            } else {
+                // Insert data baru
+                $model->insert($insertData);
+                $msg = "Data pembacaan $lokasi berhasil disimpan.";
+            }
+
+            $this->db->transComplete();
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "message" => $msg
+            ]);
+
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            log_message('error', "[savePembacaan $lokasi] Error: " . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Terjadi kesalahan saat menyimpan data pembacaan $lokasi: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk mendapatkan data pengukuran (API untuk Android)
+     */
+    public function getPengukuran()
+    {
+        try {
+            $pengukuran = $this->db->table('t_pengukuran_leftpiez')
+                ->select('id_pengukuran, tahun, periode, tanggal, dma, temp_id')
+                ->orderBy('tanggal', 'DESC')
+                ->orderBy('tahun', 'DESC')
+                ->orderBy('periode', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "data" => $pengukuran
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[getPengukuran] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal mengambil data pengukuran: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk mendapatkan data pembacaan berdasarkan pengukuran_id dan lokasi
+     */
+    public function getData()
+    {
+        try {
+            $pengukuran_id = $this->request->getGet('pengukuran_id');
+            $lokasi = $this->request->getGet('lokasi'); // L01, L02, ..., L10, SPZ02
+
+            if (!$pengukuran_id || !$lokasi) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Parameter pengukuran_id dan lokasi diperlukan!"
+                ]);
+            }
+
+            // Validasi lokasi
+            $lokasi = strtoupper($lokasi);
+            if (!array_key_exists($lokasi, $this->pembacaanModels)) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Lokasi tidak valid: $lokasi"
+                ]);
+            }
+
+            $model = $this->pembacaanModels[$lokasi];
+            $data = $model->where('id_pengukuran', $pengukuran_id)->first();
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "data" => $data ?: []
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[getData] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal mengambil data: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk mendapatkan semua data pembacaan berdasarkan pengukuran_id
+     */
+    public function getAllData()
+    {
+        try {
+            $pengukuran_id = $this->request->getGet('pengukuran_id');
+
+            if (!$pengukuran_id) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Parameter pengukuran_id diperlukan!"
+                ]);
+            }
+
+            $allData = [];
+
+            // Ambil data dari semua lokasi
+            foreach ($this->pembacaanModels as $lokasi => $model) {
+                $data = $model->where('id_pengukuran', $pengukuran_id)->first();
+                if ($data) {
+                    $allData[$lokasi] = $data;
+                }
+            }
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "data" => $allData
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[getAllData] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal mengambil data: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk mendapatkan data pengukuran berdasarkan ID (API untuk Android)
+     */
+    public function getPengukuranById()
+    {
+        try {
+            $pengukuran_id = $this->request->getGet('pengukuran_id');
+
+            if (!$pengukuran_id) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Parameter pengukuran_id diperlukan!"
+                ]);
+            }
+
+            $pengukuran = $this->db->table('t_pengukuran_leftpiez')
+                ->select('id_pengukuran, tahun, periode, tanggal, dma, temp_id')
+                ->where('id_pengukuran', $pengukuran_id)
+                ->get()
+                ->getRowArray();
+
+            if (!$pengukuran) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pengukuran tidak ditemukan!"
+                ]);
+            }
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "data" => $pengukuran
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[getPengukuranById] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal mengambil data pengukuran: " . $e->getMessage()
+            ]);
+        }
+    }
+}
