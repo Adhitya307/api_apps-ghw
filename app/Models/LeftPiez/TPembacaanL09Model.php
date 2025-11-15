@@ -11,7 +11,7 @@ class TPembacaanL09Model extends Model
     protected $allowedFields = ['id_pengukuran', 'feet', 'inch'];
     
     protected $validationRules = [
-        'feet' => 'permit_empty|string',
+        'feet' => 'permit_empty',
         'inch' => 'permit_empty|decimal'
     ];
 }

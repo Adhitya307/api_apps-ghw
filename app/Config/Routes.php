@@ -209,3 +209,17 @@ $routes->group('leftpiez', function($routes) {
     // Get All Data Pembacaan - GET
     $routes->get('getalldata', 'Leftpiez\InputdataLeftpiez::getAllData');
 });
+
+$routes->group('leftpiez', function($r) {
+    // Hitung satu L tertentu, kolom dikirim via query string ?kolom=l_01
+    $r->get('hitung-satu/(:num)', 'LeftPiez\HitungLeft::hitungSatu/$1');
+
+    // Hitung semua L01-L10 + SPZ02
+    $r->get('hitung-semua/(:num)', 'LeftPiez\HitungLeft::hitungSemua/$1');
+
+    // Preview (POST)
+    $r->post('preview', 'LeftPiez\HitungLeft::preview');
+
+    // Optional: hitungByPengukuran lama, bisa tetap ada jika ingin dipakai
+    $r->get('hitung/(:num)', 'LeftPiez\HitungLeft::hitungByPengukuran/$1');
+});
