@@ -273,3 +273,52 @@ $routes->group('leftpiez', function($r) {
     $r->get('dashboard/(:num)', 'LeftPiez\HitungLeft::dashboard/$1');
     $r->get('status/(:num)', 'LeftPiez\HitungLeft::dashboard/$1'); // alias untuk dashboard
 });
+
+
+// Routes untuk Right Piezo
+$routes->group('rightpiezo', function($routes) {
+    
+    // Routes untuk Inputdatarightpiez Controller
+    $routes->group('input', function($routes) {
+        $routes->post('', 'Rightpiezo\Inputdatarightpiez::index');
+        $routes->post('pengukuran', 'Rightpiezo\Inputdatarightpiez::index');
+        $routes->post('update_tma', 'Rightpiezo\Inputdatarightpiez::index');
+        $routes->post('pembacaan/(:segment)', 'Rightpiezo\Inputdatarightpiez::savePembacaan/$1');
+        $routes->post('metrik', 'Rightpiezo\Inputdatarightpiez::saveMetrik');
+        $routes->post('ireading_atas', 'Rightpiezo\Inputdatarightpiez::saveIreadingAtas');
+        $routes->post('perhitungan_tengah', 'Rightpiezo\Inputdatarightpiez::savePerhitunganTengah');
+        $routes->post('elevasi_dasar', 'Rightpiezo\Inputdatarightpiez::saveElevasiDasar');
+        
+        // GET routes untuk Inputdatarightpiez
+        $routes->get('pengukuran', 'Rightpiezo\Inputdatarightpiez::getPengukuran');
+        $routes->get('pengukuran/(:num)', 'Rightpiezo\Inputdatarightpiez::getPengukuranById/$1');
+        $routes->get('data', 'Rightpiezo\Inputdatarightpiez::getData');
+        $routes->get('all-data', 'Rightpiezo\Inputdatarightpiez::getAllData');
+        $routes->get('additional-data', 'Rightpiezo\Inputdatarightpiez::getAdditionalData');
+    });
+    
+    // Routes untuk GetPengukuranRightpiez Controller
+    $routes->group('get', function($routes) {
+        $routes->get('pengukuran', 'Rightpiezo\GetPengukuranRightpiez::index');
+        $routes->get('pengukuran/all', 'Rightpiezo\GetPengukuranRightpiez::getAll');
+        $routes->get('pengukuran/period', 'Rightpiezo\GetPengukuranRightpiez::getByPeriod');
+        $routes->get('pengukuran/(:num)', 'Rightpiezo\GetPengukuranRightpiez::getById/$1');
+        $routes->get('pembacaan', 'Rightpiezo\GetPengukuranRightpiez::getPembacaanByPengukuranId');
+        $routes->get('metrik', 'Rightpiezo\GetPengukuranRightpiez::getMetrikByPengukuranId');
+        $routes->get('ireading-atas', 'Rightpiezo\GetPengukuranRightpiez::getIreadingAtasByPengukuranId');
+        $routes->get('perhitungan-tengah', 'Rightpiezo\GetPengukuranRightpiez::getPerhitunganTengahByPengukuranId');
+        $routes->get('elevasi-dasar', 'Rightpiezo\GetPengukuranRightpiez::getElevasiDasarByPengukuranId');
+        $routes->get('complete-data', 'Rightpiezo\GetPengukuranRightpiez::getCompleteDataByPengukuranId');
+    });
+    
+    // ✅ ✅ ✅ PASTIKAN ROUTES HITUNG ADA DI DALAM GROUP RIGHTPIEZO ✅ ✅ ✅
+    $routes->group('hitung', function($routes) {
+        $routes->get('all', 'Rightpiezo\Hitungright::hitungAll');
+        $routes->get('lokasi', 'Rightpiezo\Hitungright::hitungLokasi');
+        $routes->get('status', 'Rightpiezo\Hitungright::getStatus');
+        $routes->get('hasil', 'Rightpiezo\Hitungright::getHasil');
+        $routes->get('trigger', 'Rightpiezo\Hitungright::triggerHitung');
+        $routes->get('test', 'Rightpiezo\Hitungright::testRumus');
+        $routes->get('trigger/(:num)/(:segment)', 'Rightpiezo\Hitungright::triggerHitung/$1/$2');
+    });
+});
