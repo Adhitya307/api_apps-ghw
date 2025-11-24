@@ -222,4 +222,54 @@ $routes->group('leftpiez', function($r) {
 
     // Optional: hitungByPengukuran lama, bisa tetap ada jika ingin dipakai
     $r->get('hitung/(:num)', 'LeftPiez\HitungLeft::hitungByPengukuran/$1');
+    
+    // ===========================================================================
+    // ROUTES UNTUK CONTROLLER GABUNGAN - PERHITUNGAN DARI PEMBACAAN
+    // ===========================================================================
+    $r->get('hitung/hitunglokasi/(:num)/(:any)', 'LeftPiez\HitungLeft::hitungLokasi/$1/$2');
+    $r->get('hitung/hitungsemua/(:num)', 'LeftPiez\HitungLeft::hitungSemuaDariPembacaan/$1');
+    
+    // ===========================================================================
+    // ROUTES UNTUK CONTROLLER GABUNGAN - PERHITUNGAN RUMUS Elv_Piez
+    // ===========================================================================
+    $r->get('hitung-rumus/semua/(:num)', 'LeftPiez\HitungLeft::hitungSemuaRumus/$1');
+    $r->get('hitung-rumus/(:any)/(:num)', 'LeftPiez\HitungLeft::hitungRumus/$1/$2');
+    $r->post('simpan-rumus', 'LeftPiez\HitungLeft::simpanSemuaRumus');
+    $r->post('simpan-rumus/(:any)', 'LeftPiez\HitungLeft::simpanRumus/$1');
+    $r->get('data-rumus', 'LeftPiez\HitungLeft::getDataRumus');
+    $r->get('data-rumus/(:any)', 'LeftPiez\HitungLeft::getDataRumus/$1');
+    $r->put('update-rumus/(:any)', 'LeftPiez\HitungLeft::updateDataRumus/$1');
+    
+    // ===========================================================================
+    // ROUTES BARU UNTUK IREADING A & B
+    // ===========================================================================
+    $r->post('ireading/(:any)', 'LeftPiez\HitungLeft::simpanIreading/$1'); // A atau B
+    $r->get('ireading/(:any)', 'LeftPiez\HitungLeft::getIreading/$1'); // A atau B
+    
+    // ===========================================================================
+    // ROUTES BARU UNTUK PERHITUNGAN DENGAN IREADING
+    // ===========================================================================
+    $r->get('hitung-dengan-ireading/(:any)/(:num)/(:any)', 'LeftPiez\HitungLeft::hitungDenganIreading/$1/$2/$3'); // piezometer/id/source
+    
+    // ===========================================================================
+    // ROUTES BARU UNTUK INSERT DATA PERHITUNGAN
+    // ===========================================================================
+    $r->post('insert-rumus/(:any)', 'LeftPiez\HitungLeft::insertRumus/$1');
+    
+    // ===========================================================================
+    // ROUTES BARU UNTUK GET NILAI METRIK
+    // ===========================================================================
+    $r->get('nilai-metrik', 'LeftPiez\HitungLeft::getNilaiMetrik');
+    $r->get('nilai-metrik/(:any)', 'LeftPiez\HitungLeft::getNilaiMetrik/$1');
+    
+    // ===========================================================================
+    // ROUTES BARU UNTUK UPDATE LENGKAP
+    // ===========================================================================
+    $r->put('update-rumus-lengkap/(:any)', 'LeftPiez\HitungLeft::updateRumusLengkap/$1');
+    
+    // ===========================================================================
+    // DASHBOARD & UTILITY
+    // ===========================================================================
+    $r->get('dashboard/(:num)', 'LeftPiez\HitungLeft::dashboard/$1');
+    $r->get('status/(:num)', 'LeftPiez\HitungLeft::dashboard/$1'); // alias untuk dashboard
 });

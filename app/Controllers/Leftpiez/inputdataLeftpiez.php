@@ -182,11 +182,11 @@ class InputdataLeftpiez extends Controller
                 $this->pengukuranModel->save($insertData); // pakai save() supaya aman
                 $pengukuran_id = $this->pengukuranModel->getInsertID();
 
-                // INSERT METRIK DEFAULT MUTLAK
+                // INSERT METRIK DEFAULT MUTLAK - SESUAIKAN DENGAN STRUKTUR TABEL
                 $this->db->table("b_piezo_metrik")->insert([
                     "id_pengukuran" => $pengukuran_id,
-                    "feet" => 0.3048,   // nilai mutlak langsung
-                    "inch" => 0.0254,   // nilai mutlak langsung
+                    "M_feet" => 0.3048,   // gunakan M_feet sesuai struktur tabel
+                    "M_inch" => 0.0254,   // gunakan M_inch sesuai struktur tabel
                     "l_01" => null,
                     "l_02" => null,
                     "l_03" => null,
@@ -201,7 +201,6 @@ class InputdataLeftpiez extends Controller
                     "created_at" => date("Y-m-d H:i:s"),
                     "updated_at" => date("Y-m-d H:i:s")
                 ]);
-
 
                 return $this->response->setJSON(["status"=>"success","message"=>"Data pengukuran berhasil dibuat.","pengukuran_id"=>$pengukuran_id]);
             }
