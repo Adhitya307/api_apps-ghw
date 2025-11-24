@@ -16,6 +16,8 @@ use App\Models\LeftPiez\TPembacaanL08Model;
 use App\Models\LeftPiez\TPembacaanL09Model;
 use App\Models\LeftPiez\TPembacaanL10Model;
 use App\Models\LeftPiez\TPembacaanSpz02Model;
+use App\Models\LeftPiez\IreadingA; // ✅ TAMBAHAN: Model untuk initial readings A
+use App\Models\LeftPiez\IreadingB; // ✅ TAMBAHAN: Model untuk initial readings B
 
 class InputdataLeftpiez extends Controller
 {
@@ -182,6 +184,45 @@ class InputdataLeftpiez extends Controller
                 $this->pengukuranModel->save($insertData); // pakai save() supaya aman
                 $pengukuran_id = $this->pengukuranModel->getInsertID();
 
+                // ✅ TAMBAHAN: INSERT INITIAL READINGS A OTOMATIS SETELAH CREATE PENGUKURAN
+                $initialValuesA = [
+                    'L_01' => 650.64,
+                    'L_02' => 650.60,
+                    'L_03' => 616.55,
+                    'L_04' => 580.26,
+                    'L_05' => 700.76,
+                    'L_06' => 690.09,
+                    'L_07' => 653.36,
+                    'L_08' => 659.14,
+                    'L_09' => 622.45,
+                    'L_10' => 580.36,
+                    'SPZ_02' => 700.08
+                ];
+
+                $ireadingA = new IreadingA();
+                $ireadingA->insertInitialReadings($pengukuran_id, $initialValuesA);
+
+                // ✅ TAMBAHAN: INSERT INITIAL READINGS B OTOMATIS SETELAH CREATE PENGUKURAN
+                $initialValuesB = [
+                    'L_01'  => 71.5,
+                    'L_02'  => 73,
+                    'L_03'  => 59,
+                    'L_04'  => 50,
+                    'L_05'  => 62,
+                    'L_06'  => 62,
+                    'L_07'  => 40,
+                    'L_08'  => 55.5,
+                    'L_09'  => 57,
+                    'L_10'  => 51.5,
+                    'SPZ_02'=> 70
+                ];
+
+                $ireadingB = new IreadingB();
+                $ireadingB->insertInitialReadings($pengukuran_id, $initialValuesB);
+
+                log_message('debug', '[InitialReadings] Insert otomatis A & B untuk pengukuran_id=' . $pengukuran_id);
+                // ✅ END TAMBAHAN
+
                 // INSERT METRIK DEFAULT MUTLAK - SESUAIKAN DENGAN STRUKTUR TABEL
                 $this->db->table("b_piezo_metrik")->insert([
                     "id_pengukuran" => $pengukuran_id,
@@ -202,7 +243,11 @@ class InputdataLeftpiez extends Controller
                     "updated_at" => date("Y-m-d H:i:s")
                 ]);
 
-                return $this->response->setJSON(["status"=>"success","message"=>"Data pengukuran berhasil dibuat.","pengukuran_id"=>$pengukuran_id]);
+                return $this->response->setJSON([
+                    "status" => "success",
+                    "message" => "Data pengukuran & initial readings A & B berhasil dibuat.",
+                    "pengukuran_id" => $pengukuran_id
+                ]);
             }
 
             // UPDATE

@@ -9,6 +9,7 @@ class PerhitunganL01Model extends Model
     protected $DBGroup = 'db_left_piez';
     protected $table = 'perhitungan_L_01';
     protected $primaryKey = 'id_perhitungan';
+
     protected $allowedFields = [
         'id_pengukuran',
         'elv_piez',
@@ -16,12 +17,12 @@ class PerhitunganL01Model extends Model
         'record_max',
         'record_min',
         'koordinat_x',
-        'koordinat_y'
+        'koordinat_y',
+        't_psmetrik_L01'   // ✔ tambahan field
     ];
 
     protected $useTimestamps = false;
 
-    // Default value
     protected $defaults = [
         'elv_piez'  => 650.64,
         'kedalaman' => 71.15
@@ -35,33 +36,22 @@ class PerhitunganL01Model extends Model
         $this->metrikModel = new MetrikModel();
     }
 
-    /**
-     * Hitung nilai l_01 seperti rumus Excel
-     */
     public function hitungL01($id_pengukuran)
     {
-        // Ambil data dari MetrikModel
         $metrik = $this->metrikModel->where('id_pengukuran', $id_pengukuran)->first();
+        if (!$metrik) return null;
 
-        if (!$metrik) {
-            return null; // jika tidak ada data, return null
-        }
-
-        // Ambil nilai elv_piez dan kedalaman
         $elv = $this->defaults['elv_piez'];
         $kedalaman = $this->defaults['kedalaman'];
 
-        // Jika data sudah ada di database Perhitungan, override default
         $existing = $this->where('id_pengukuran', $id_pengukuran)->first();
         if ($existing) {
             $elv = $existing['elv_piez'];
             $kedalaman = $existing['kedalaman'];
         }
 
-        // Ambil nilai l_01 dari MetrikModel
-        $l_01 = isset($metrik['l_01']) ? $metrik['l_01'] : null;
+        $l_01 = $metrik['l_01'] ?? null;
 
-        // Rumus IFERROR: jika l_01 ada, gunakan elv - l_01, jika error atau null, gunakan elv - kedalaman
         try {
             if (is_numeric($l_01)) {
                 $result = $elv - $l_01;
@@ -75,18 +65,15 @@ class PerhitunganL01Model extends Model
         return round($result, 4);
     }
 
-public function insert($data = null, bool $returnID = true)
-{
-    $data = array_merge($this->defaults, (array) $data);
+    public function insert($data = null, bool $returnID = true)
+    {
+        $data = array_merge($this->defaults, (array) $data);
 
-    if (isset($data['id_pengukuran'])) {
-        $nilai = $this->hitungL01($data['id_pengukuran']);
+        if (!empty($data['id_pengukuran'])) {
+            $nilai = $this->hitungL01($data['id_pengukuran']);
+            $data['t_psmetrik_L01'] = $nilai;   // ✔ simpan ke DB
+        }
 
-      
-        $data['t_psmetrik_L01'] = $nilai; // simpan juga di kolom baru
+        return parent::insert($data, $returnID);
     }
-
-    return parent::insert($data, $returnID);
-}
-
 }
