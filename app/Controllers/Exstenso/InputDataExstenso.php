@@ -14,6 +14,11 @@ use App\Models\Exstenso\ReadingsEx2Model;
 use App\Models\Exstenso\ReadingsEx3Model;
 use App\Models\Exstenso\ReadingsEx4Model;
 
+use App\models\Exstenso\DeformasiEx1Model;
+use App\models\Exstenso\DeformasiEx2Model;
+use App\models\Exstenso\DeformasiEx3Model;
+use App\models\Exstenso\DeformasiEx4Model;
+
 class InputDataExstenso extends Controller
 {
     protected $db;
@@ -26,6 +31,12 @@ class InputDataExstenso extends Controller
     protected $readingsEx2Model;
     protected $readingsEx3Model;
     protected $readingsEx4Model;
+
+    // Di dalam class InputDataExstenso, tambahkan property:
+    protected $deformasiEx1Model;
+    protected $deformasiEx2Model;
+    protected $deformasiEx3Model;
+    protected $deformasiEx4Model;
 
     public function __construct()
     {
@@ -41,6 +52,11 @@ class InputDataExstenso extends Controller
         $this->readingsEx2Model = new ReadingsEx2Model();
         $this->readingsEx3Model = new ReadingsEx3Model();
         $this->readingsEx4Model = new ReadingsEx4Model();
+
+        $this->deformasiEx1Model = new DeformasiEx1Model();
+        $this->deformasiEx2Model = new DeformasiEx2Model();
+        $this->deformasiEx3Model = new DeformasiEx3Model();
+        $this->deformasiEx4Model = new DeformasiEx4Model();
 
         // Support CORS untuk testing Android / Postman
         header("Access-Control-Allow-Origin: *");
@@ -164,131 +180,198 @@ class InputDataExstenso extends Controller
         }
     }
 
-    private function savePengukuran($data, $temp_id)
-    {
-        try {
-            log_message('debug', '[savePengukuran] Data received: ' . json_encode($data));
-            
-            $pengukuran_id = $this->getVal('pengukuran_id', $data);
-            $tahun   = $this->getVal('tahun', $data);
-            $periode = $this->getVal('periode', $data);
-            $tanggal = $this->getVal('tanggal', $data);
-            $dma     = $this->getVal('dma', $data);
+private function savePengukuran($data, $temp_id)
+{
+    try {
+        log_message('debug', '[savePengukuran] Data received: ' . json_encode($data));
+        
+        $pengukuran_id = $this->getVal('pengukuran_id', $data);
+        $tahun   = $this->getVal('tahun', $data);
+        $periode = $this->getVal('periode', $data);
+        $tanggal = $this->getVal('tanggal', $data);
+        $dma     = $this->getVal('dma', $data);
 
-            log_message('debug', "[savePengukuran] Parsed: tahun=$tahun, periode=$periode, tanggal=$tanggal, dma=$dma");
+        log_message('debug', "[savePengukuran] Parsed: tahun=$tahun, periode=$periode, tanggal=$tanggal, dma=$dma");
 
-            // Jika tidak ada pengukuran_id → wajib tahun & tanggal
-            if (!$tahun || !$tanggal) {
-                return $this->response->setJSON([
-                    "status" => "error",
-                    "message" => "Tahun dan Tanggal wajib diisi!"
-                ]);
+        // Validasi: Jika tidak ada pengukuran_id → wajib tahun & tanggal
+        if (!$tahun || !$tanggal) {
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Tahun dan Tanggal wajib diisi!"
+            ]);
+        }
+
+        // Format periode: Pastikan format TW-1, TW-2, dll
+        if ($periode && !preg_match('/^TW-/i', $periode)) {
+            if (is_numeric($periode)) {
+                $periode = "TW-" . $periode;
             }
+        }
 
-            // Format periode
-            if ($periode && !preg_match('/^TW-/i', $periode)) {
-                if (is_numeric($periode)) {
-                    $periode = "TW-" . $periode;
-                }
-            }
+        // PERBAIKAN: Cek apakah ini UPDATE atau CREATE
+        if ($pengukuran_id && is_numeric($pengukuran_id)) {
+            // MODE UPDATE: Cek apakah pengukuran_id ada di database
+            $check = $this->db->table("t_pengukuran_eks")
+                ->where("id_pengukuran", $pengukuran_id)
+                ->get()
+                ->getRow();
 
-            // PERBAIKAN: Cek apakah ini UPDATE atau CREATE
-            if ($pengukuran_id && is_numeric($pengukuran_id)) {
-                // MODE UPDATE: Cek apakah pengukuran_id ada di database
-                $check = $this->db->table("t_pengukuran_eks")
-                    ->where("id_pengukuran", $pengukuran_id)
-                    ->get()
-                    ->getRow();
-
-                if ($check) {
-                    // UPDATE data yang sudah ada
-                    $updateData = [];
-                    if ($dma !== null) $updateData["dma"] = $dma;
-                    if ($periode !== null) $updateData["periode"] = $periode;
+            if ($check) {
+                // UPDATE data yang sudah ada
+                $updateData = [];
+                if ($dma !== null) $updateData["dma"] = $dma;
+                if ($periode !== null) $updateData["periode"] = $periode;
+                
+                // Hanya update jika ada field yang berubah
+                if (!empty($updateData)) {
+                    $this->db->table("t_pengukuran_eks")
+                        ->where("id_pengukuran", $pengukuran_id)
+                        ->update($updateData);
                     
-                    // Hanya update jika ada field yang berubah
-                    if (!empty($updateData)) {
-                        $this->db->table("t_pengukuran_eks")
-                            ->where("id_pengukuran", $pengukuran_id)
-                            ->update($updateData);
-                        
-                        log_message('debug', "[savePengukuran] Updated pengukuran ID: $pengukuran_id");
-                    }
-
-                    return $this->response->setJSON([
-                        "status" => "success",
-                        "message" => "Data pengukuran berhasil diperbarui.",
-                        "pengukuran_id" => $pengukuran_id
-                    ]);
-                } else {
-                    return $this->response->setJSON([
-                        "status" => "error",
-                        "message" => "Data pengukuran dengan ID $pengukuran_id tidak ditemukan!"
-                    ]);
+                    log_message('debug', "[savePengukuran] Updated pengukuran ID: $pengukuran_id");
                 }
-            } else {
-                // MODE CREATE: Cek duplikasi dengan logika yang lebih longgar
-                $check = $this->db->table("t_pengukuran_eks")
-                    ->where("tahun", $tahun)
-                    ->where("tanggal", $tanggal)
-                    ->where("periode", $periode)
-                    ->get()
-                    ->getRow();
-
-                log_message('debug', "[savePengukuran] Check existing: " . ($check ? 'exists' : 'not exists'));
-
-                if ($check) {
-                    return $this->response->setJSON([
-                        "status" => "info",
-                        "message" => "Data pengukuran sudah ada.",
-                        "pengukuran_id" => $check->id_pengukuran
-                    ]);
-                }
-
-                // Insert baru jika belum ada data
-                $insertData = [
-                    "tahun" => $tahun,
-                    "periode" => $periode,
-                    "tanggal" => $tanggal,
-                    "dma" => $dma,
-                    "temp_id" => $temp_id
-                ];
-
-                log_message('debug', '[savePengukuran] Insert data: ' . json_encode($insertData));
-
-                $this->db->transStart();
-
-                if (!$this->pengukuranModel->insert($insertData)) {
-                    $error = $this->pengukuranModel->errors();
-                    log_message('error', '[savePengukuran] Model error: ' . json_encode($error));
-                    $this->db->transRollback();
-                    return $this->response->setJSON([
-                        "status" => "error",
-                        "message" => "Gagal menyimpan data pengukuran: " . implode(', ', $error)
-                    ]);
-                }
-
-                $pengukuran_id = $this->pengukuranModel->getInsertID();
-                log_message('debug', "[savePengukuran] Insert success, ID: $pengukuran_id");
-
-                $this->db->transComplete();
 
                 return $this->response->setJSON([
                     "status" => "success",
-                    "message" => "Data pengukuran berhasil dibuat.",
+                    "message" => "Data pengukuran berhasil diperbarui.",
                     "pengukuran_id" => $pengukuran_id
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pengukuran dengan ID $pengukuran_id tidak ditemukan!"
+                ]);
+            }
+        } else {
+            // MODE CREATE: Cek duplikasi dengan logika yang lebih longgar
+            $check = $this->db->table("t_pengukuran_eks")
+                ->where("tahun", $tahun)
+                ->where("tanggal", $tanggal)
+                ->where("periode", $periode)
+                ->get()
+                ->getRow();
+
+            log_message('debug', "[savePengukuran] Check existing: " . ($check ? 'exists' : 'not exists'));
+
+            if ($check) {
+                return $this->response->setJSON([
+                    "status" => "info",
+                    "message" => "Data pengukuran sudah ada.",
+                    "pengukuran_id" => $check->id_pengukuran
                 ]);
             }
 
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            log_message('error', '[savePengukuran] Exception: ' . $e->getMessage());
+            // Insert baru jika belum ada data
+            $insertData = [
+                "tahun" => $tahun,
+                "periode" => $periode,
+                "tanggal" => $tanggal,
+                "dma" => $dma,
+                "temp_id" => $temp_id
+            ];
+
+            log_message('debug', '[savePengukuran] Insert data: ' . json_encode($insertData));
+
+            $this->db->transStart();
+
+            // 1. Insert data pengukuran utama
+            if (!$this->pengukuranModel->insert($insertData)) {
+                $error = $this->pengukuranModel->errors();
+                log_message('error', '[savePengukuran] Model error: ' . json_encode($error));
+                $this->db->transRollback();
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Gagal menyimpan data pengukuran: " . implode(', ', $error)
+                ]);
+            }
+
+            $pengukuran_id = $this->pengukuranModel->getInsertID();
+            log_message('debug', "[savePengukuran] Insert success, ID: $pengukuran_id");
+
+            // 2. PERBAIKAN BARU: Buat data readings otomatis dengan nilai default
+            $autoReadingsResult = $this->createDefaultReadings($pengukuran_id);
+            
+            if ($autoReadingsResult) {
+                log_message('debug', "[savePengukuran] Default readings berhasil dibuat untuk pengukuran_id: $pengukuran_id");
+            } else {
+                log_message('warning', "[savePengukuran] Default readings gagal dibuat untuk pengukuran_id: $pengukuran_id");
+                // Tidak dirollback karena pengukuran utama sudah berhasil
+            }
+
+            $this->db->transComplete();
+
             return $this->response->setJSON([
-                "status" => "error",
-                "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
+                "status" => "success",
+                "message" => "Data pengukuran berhasil dibuat" . 
+                           ($autoReadingsResult ? " dan data readings default otomatis di-generate." : " (data readings default gagal di-generate)."),
+                "pengukuran_id" => $pengukuran_id,
+                "auto_readings_created" => $autoReadingsResult
             ]);
         }
+
+    } catch (\Exception $e) {
+        $this->db->transRollback();
+        log_message('error', '[savePengukuran] Exception: ' . $e->getMessage());
+        return $this->response->setJSON([
+            "status" => "error",
+            "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
+        ]);
     }
+}
+
+/**
+ * PERBAIKAN BARU: Method untuk membuat data readings otomatis dengan nilai default
+ */
+private function createDefaultReadings($pengukuran_id)
+{
+    try {
+        log_message('debug', "[createDefaultReadings] Membuat default readings untuk pengukuran_id: $pengukuran_id");
+        
+        // Nilai default untuk setiap Ex
+        $defaultValues = [
+            1 => ['reading_10' => 35, 'reading_20' => 40.95, 'reading_30' => 29.8],    // Ex1
+            2 => ['reading_10' => 22.6, 'reading_20' => 23.7, 'reading_30' => 30.75],  // Ex2
+            3 => ['reading_10' => 37.75, 'reading_20' => 39.15, 'reading_30' => 41.4], // Ex3
+            4 => ['reading_10' => 33.8, 'reading_20' => 29.3, 'reading_30' => 48.95]   // Ex4
+        ];
+        
+        $totalCreated = 0;
+        
+        // Loop untuk setiap Ex (1-4)
+        for ($ex_number = 1; $ex_number <= 4; $ex_number++) {
+            $readingsModel = $this->{"readingsEx{$ex_number}Model"};
+            
+            // Cek apakah readings sudah ada untuk pengukuran_id ini
+            $existingReadings = $readingsModel->where('id_pengukuran', $pengukuran_id)->first();
+            
+            if (!$existingReadings) {
+                // Insert data baru dengan nilai default
+                $readingsData = [
+                    'id_pengukuran' => $pengukuran_id,
+                    'reading_10' => $defaultValues[$ex_number]['reading_10'],
+                    'reading_20' => $defaultValues[$ex_number]['reading_20'],
+                    'reading_30' => $defaultValues[$ex_number]['reading_30']
+                ];
+                
+                if ($readingsModel->insert($readingsData)) {
+                    log_message('debug', "[createDefaultReadings] Created default readings Ex$ex_number untuk pengukuran_id: $pengukuran_id");
+                    $totalCreated++;
+                } else {
+                    log_message('error', "[createDefaultReadings] Failed to create default readings Ex$ex_number untuk pengukuran_id: $pengukuran_id");
+                }
+            } else {
+                log_message('debug', "[createDefaultReadings] Readings Ex$ex_number sudah ada untuk pengukuran_id: $pengukuran_id");
+            }
+        }
+        
+        // Return true jika minimal satu data readings berhasil dibuat
+        return $totalCreated > 0;
+        
+    } catch (\Exception $e) {
+        log_message('error', "[createDefaultReadings] Error: " . $e->getMessage());
+        return false;
+    }
+}
 
     /**
      * PERBAIKAN: Method baru untuk update DMA saja

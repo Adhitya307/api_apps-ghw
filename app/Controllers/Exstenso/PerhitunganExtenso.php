@@ -35,6 +35,81 @@ class PerhitunganExtenso extends BaseController
         $this->pembacaanEx4Model = new PembacaanEx4Model();
     }
 
+    /**
+     * Helper function untuk menghitung deformasi dengan logika yang benar
+     * JIKA PEMBACAAN 0 ATAU NULL → JANGAN HITUNG DEFORMASI
+     */
+    private function hitungDeformasiSingle($idPengukuran, $pembacaanModel, $deformasiModel, $pembAwal10, $pembAwal20, $pembAwal30)
+    {
+        // Ambil data dari tabel pembacaan
+        $pembacaan = $pembacaanModel->where('id_pengukuran', $idPengukuran)->first();
+
+        if (!$pembacaan) {
+            return [
+                'status' => 'error',
+                'message' => 'Data pembacaan tidak ditemukan'
+            ];
+        }
+
+        // Cek apakah sudah ada data deformasi
+        $existingDeformasi = $deformasiModel->where('id_pengukuran', $idPengukuran)->first();
+
+        // Data untuk disimpan
+        $data = [
+            'id_pengukuran' => $idPengukuran,
+            'pemb_awal10'   => $pembAwal10,
+            'pemb_awal20'   => $pembAwal20,
+            'pemb_awal30'   => $pembAwal30
+        ];
+
+        // LOGIKA BARU: Hitung deformasi hanya jika pembacaan tidak null dan tidak 0
+        // Jika 0 atau null, pertahankan nilai yang sudah ada atau set ke 0
+        
+        // Untuk deformasi_10
+        if (isset($pembacaan['pembacaan_10']) && $pembacaan['pembacaan_10'] !== null && $pembacaan['pembacaan_10'] != 0) {
+            $data['deformasi_10'] = $pembacaan['pembacaan_10'] - $pembAwal10;
+        } else if ($existingDeformasi && isset($existingDeformasi['deformasi_10'])) {
+            $data['deformasi_10'] = $existingDeformasi['deformasi_10']; // Pertahankan nilai lama
+        } else {
+            $data['deformasi_10'] = 0; // Nilai default jika belum ada data
+        }
+
+        // Untuk deformasi_20
+        if (isset($pembacaan['pembacaan_20']) && $pembacaan['pembacaan_20'] !== null && $pembacaan['pembacaan_20'] != 0) {
+            $data['deformasi_20'] = $pembacaan['pembacaan_20'] - $pembAwal20;
+        } else if ($existingDeformasi && isset($existingDeformasi['deformasi_20'])) {
+            $data['deformasi_20'] = $existingDeformasi['deformasi_20']; // Pertahankan nilai lama
+        } else {
+            $data['deformasi_20'] = 0; // Nilai default jika belum ada data
+        }
+
+        // Untuk deformasi_30
+        if (isset($pembacaan['pembacaan_30']) && $pembacaan['pembacaan_30'] !== null && $pembacaan['pembacaan_30'] != 0) {
+            $data['deformasi_30'] = $pembacaan['pembacaan_30'] - $pembAwal30;
+        } else if ($existingDeformasi && isset($existingDeformasi['deformasi_30'])) {
+            $data['deformasi_30'] = $existingDeformasi['deformasi_30']; // Pertahankan nilai lama
+        } else {
+            $data['deformasi_30'] = 0; // Nilai default jika belum ada data
+        }
+
+        // Simpan ke database
+        if ($existingDeformasi) {
+            $deformasiModel->update($existingDeformasi[$deformasiModel->primaryKey], $data);
+            $resultData = $deformasiModel->find($existingDeformasi[$deformasiModel->primaryKey]);
+            $action = 'updated';
+        } else {
+            $insertId = $deformasiModel->insert($data);
+            $resultData = $deformasiModel->find($insertId);
+            $action = 'created';
+        }
+
+        return [
+            'status' => 'success',
+            'action' => $action,
+            'data' => $resultData
+        ];
+    }
+
     public function HitungDeformasiEx1()
     {
         // Ambil data dari input JSON
@@ -50,51 +125,33 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
 
-        // CEK APAKAH SUDAH ADA DATA DEFORMASI
-        $existingDeformasi = $this->deformasiEx1Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($existingDeformasi) {
-            return $this->response->setJSON([
-                'status' => 'info',
-                'message' => 'Data deformasi Ex1 untuk pengukuran ini sudah ada',
-                'data' => $existingDeformasi
-            ]);
-        }
-
-        // Ambil data dari tabel pembacaan Ex1
-        $pembacaan = $this->pembacaanEx1Model->where('id_pengukuran', $idPengukuran)->first();
-
-        if (!$pembacaan) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Data pembacaan Ex1 tidak ditemukan untuk id_pengukuran: ' . $idPengukuran
-            ]);
-        }
-
         // Nilai default pemb_awal untuk Ex1
         $pemb_awal10 = 35.00;
         $pemb_awal20 = 40.95;
         $pemb_awal30 = 29.80;
 
-        // Data untuk disimpan - GUNAKAN DATA DARI TABEL PEMBACAAN
-        $hasil = [
-            'id_pengukuran' => $idPengukuran,
-            'pemb_awal10'   => $pemb_awal10,
-            'pemb_awal20'   => $pemb_awal20,
-            'pemb_awal30'   => $pemb_awal30,
-            'deformasi_10'  => $pembacaan['pembacaan_10'] - $pemb_awal10,
-            'deformasi_20'  => $pembacaan['pembacaan_20'] - $pemb_awal20,
-            'deformasi_30'  => $pembacaan['pembacaan_30'] - $pemb_awal30,
-        ];
+        $result = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx1Model,
+            $this->deformasiEx1Model,
+            $pemb_awal10,
+            $pemb_awal20,
+            $pemb_awal30
+        );
 
-        // Simpan ke database
-        $insertId = $this->deformasiEx1Model->insert($hasil);
+        if ($result['status'] === 'success') {
+            $message = $result['action'] === 'created' 
+                ? 'Perhitungan deformasi Ex1 berhasil dibuat' 
+                : 'Perhitungan deformasi Ex1 berhasil diperbarui';
 
-        // Response
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Perhitungan deformasi Ex1 berhasil',
-            'data' => $this->deformasiEx1Model->find($insertId)
-        ]);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => $message,
+                'data' => $result['data']
+            ]);
+        } else {
+            return $this->response->setJSON($result);
+        }
     }
 
     public function HitungDeformasiEx2()
@@ -112,51 +169,33 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
 
-        // CEK APAKAH SUDAH ADA DATA DEFORMASI
-        $existingDeformasi = $this->deformasiEx2Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($existingDeformasi) {
-            return $this->response->setJSON([
-                'status' => 'info',
-                'message' => 'Data deformasi Ex2 untuk pengukuran ini sudah ada',
-                'data' => $existingDeformasi
-            ]);
-        }
-
-        // Ambil data dari tabel pembacaan Ex2
-        $pembacaan = $this->pembacaanEx2Model->where('id_pengukuran', $idPengukuran)->first();
-
-        if (!$pembacaan) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Data pembacaan Ex2 tidak ditemukan untuk id_pengukuran: ' . $idPengukuran
-            ]);
-        }
-
         // Nilai default pemb_awal untuk Ex2
         $pemb_awal10 = 22.60;
         $pemb_awal20 = 23.70;
         $pemb_awal30 = 30.75;
 
-        // Data untuk disimpan - GUNAKAN DATA DARI TABEL PEMBACAAN
-        $hasil = [
-            'id_pengukuran' => $idPengukuran,
-            'pemb_awal10'   => $pemb_awal10,
-            'pemb_awal20'   => $pemb_awal20,
-            'pemb_awal30'   => $pemb_awal30,
-            'deformasi_10'  => $pembacaan['pembacaan_10'] - $pemb_awal10,
-            'deformasi_20'  => $pembacaan['pembacaan_20'] - $pemb_awal20,
-            'deformasi_30'  => $pembacaan['pembacaan_30'] - $pemb_awal30,
-        ];
+        $result = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx2Model,
+            $this->deformasiEx2Model,
+            $pemb_awal10,
+            $pemb_awal20,
+            $pemb_awal30
+        );
 
-        // Simpan ke database
-        $insertId = $this->deformasiEx2Model->insert($hasil);
+        if ($result['status'] === 'success') {
+            $message = $result['action'] === 'created' 
+                ? 'Perhitungan deformasi Ex2 berhasil dibuat' 
+                : 'Perhitungan deformasi Ex2 berhasil diperbarui';
 
-        // Response
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Perhitungan deformasi Ex2 berhasil',
-            'data' => $this->deformasiEx2Model->find($insertId)
-        ]);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => $message,
+                'data' => $result['data']
+            ]);
+        } else {
+            return $this->response->setJSON($result);
+        }
     }
 
     public function HitungDeformasiEx3()
@@ -174,51 +213,33 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
 
-        // CEK APAKAH SUDAH ADA DATA DEFORMASI
-        $existingDeformasi = $this->deformasiEx3Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($existingDeformasi) {
-            return $this->response->setJSON([
-                'status' => 'info',
-                'message' => 'Data deformasi Ex3 untuk pengukuran ini sudah ada',
-                'data' => $existingDeformasi
-            ]);
-        }
-
-        // Ambil data dari tabel pembacaan Ex3
-        $pembacaan = $this->pembacaanEx3Model->where('id_pengukuran', $idPengukuran)->first();
-
-        if (!$pembacaan) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Data pembacaan Ex3 tidak ditemukan untuk id_pengukuran: ' . $idPengukuran
-            ]);
-        }
-
         // Nilai default pemb_awal untuk Ex3
         $pemb_awal10 = 37.75;
         $pemb_awal20 = 39.15;
         $pemb_awal30 = 41.40;
 
-        // Data untuk disimpan - GUNAKAN DATA DARI TABEL PEMBACAAN
-        $hasil = [
-            'id_pengukuran' => $idPengukuran,
-            'pemb_awal10'   => $pemb_awal10,
-            'pemb_awal20'   => $pemb_awal20,
-            'pemb_awal30'   => $pemb_awal30,
-            'deformasi_10'  => $pembacaan['pembacaan_10'] - $pemb_awal10,
-            'deformasi_20'  => $pembacaan['pembacaan_20'] - $pemb_awal20,
-            'deformasi_30'  => $pembacaan['pembacaan_30'] - $pemb_awal30,
-        ];
+        $result = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx3Model,
+            $this->deformasiEx3Model,
+            $pemb_awal10,
+            $pemb_awal20,
+            $pemb_awal30
+        );
 
-        // Simpan ke database
-        $insertId = $this->deformasiEx3Model->insert($hasil);
+        if ($result['status'] === 'success') {
+            $message = $result['action'] === 'created' 
+                ? 'Perhitungan deformasi Ex3 berhasil dibuat' 
+                : 'Perhitungan deformasi Ex3 berhasil diperbarui';
 
-        // Response
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Perhitungan deformasi Ex3 berhasil',
-            'data' => $this->deformasiEx3Model->find($insertId)
-        ]);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => $message,
+                'data' => $result['data']
+            ]);
+        } else {
+            return $this->response->setJSON($result);
+        }
     }
 
     public function HitungDeformasiEx4()
@@ -236,51 +257,33 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
 
-        // CEK APAKAH SUDAH ADA DATA DEFORMASI
-        $existingDeformasi = $this->deformasiEx4Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($existingDeformasi) {
-            return $this->response->setJSON([
-                'status' => 'info',
-                'message' => 'Data deformasi Ex4 untuk pengukuran ini sudah ada',
-                'data' => $existingDeformasi
-            ]);
-        }
-
-        // Ambil data dari tabel pembacaan Ex4
-        $pembacaan = $this->pembacaanEx4Model->where('id_pengukuran', $idPengukuran)->first();
-
-        if (!$pembacaan) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Data pembacaan Ex4 tidak ditemukan untuk id_pengukuran: ' . $idPengukuran
-            ]);
-        }
-
         // Nilai default pemb_awal untuk Ex4
         $pemb_awal10 = 33.80;
         $pemb_awal20 = 29.30;
         $pemb_awal30 = 48.95;
 
-        // Data untuk disimpan - GUNAKAN DATA DARI TABEL PEMBACAAN
-        $hasil = [
-            'id_pengukuran' => $idPengukuran,
-            'pemb_awal10'   => $pemb_awal10,
-            'pemb_awal20'   => $pemb_awal20,
-            'pemb_awal30'   => $pemb_awal30,
-            'deformasi_10'  => $pembacaan['pembacaan_10'] - $pemb_awal10,
-            'deformasi_20'  => $pembacaan['pembacaan_20'] - $pemb_awal20,
-            'deformasi_30'  => $pembacaan['pembacaan_30'] - $pemb_awal30,
-        ];
+        $result = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx4Model,
+            $this->deformasiEx4Model,
+            $pemb_awal10,
+            $pemb_awal20,
+            $pemb_awal30
+        );
 
-        // Simpan ke database
-        $insertId = $this->deformasiEx4Model->insert($hasil);
+        if ($result['status'] === 'success') {
+            $message = $result['action'] === 'created' 
+                ? 'Perhitungan deformasi Ex4 berhasil dibuat' 
+                : 'Perhitungan deformasi Ex4 berhasil diperbarui';
 
-        // Response
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Perhitungan deformasi Ex4 berhasil',
-            'data' => $this->deformasiEx4Model->find($insertId)
-        ]);
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => $message,
+                'data' => $result['data']
+            ]);
+        } else {
+            return $this->response->setJSON($result);
+        }
     }
 
     /**
@@ -301,119 +304,119 @@ class PerhitunganExtenso extends BaseController
 
         $idPengukuran = $data['id_pengukuran'];
         $results = [];
+        $summary = [
+            'created' => 0,
+            'updated' => 0,
+            'skipped' => 0
+        ];
 
         // Hitung Deformasi Ex1
-        $pembacaanEx1 = $this->pembacaanEx1Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($pembacaanEx1) {
-            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex1
-            $existingEx1 = $this->deformasiEx1Model->where('id_pengukuran', $idPengukuran)->first();
-            if (!$existingEx1) {
-                $pemb_awal10 = 35.00;
-                $pemb_awal20 = 40.95;
-                $pemb_awal30 = 29.80;
-
-                $hasilEx1 = [
-                    'id_pengukuran' => $idPengukuran,
-                    'pemb_awal10'   => $pemb_awal10,
-                    'pemb_awal20'   => $pemb_awal20,
-                    'pemb_awal30'   => $pemb_awal30,
-                    'deformasi_10'  => $pembacaanEx1['pembacaan_10'] - $pemb_awal10,
-                    'deformasi_20'  => $pembacaanEx1['pembacaan_20'] - $pemb_awal20,
-                    'deformasi_30'  => $pembacaanEx1['pembacaan_30'] - $pemb_awal30,
-                ];
-
-                $insertIdEx1 = $this->deformasiEx1Model->insert($hasilEx1);
-                $results['ex1'] = $this->deformasiEx1Model->find($insertIdEx1);
-            } else {
-                $results['ex1'] = $existingEx1;
-            }
+        $resultEx1 = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx1Model,
+            $this->deformasiEx1Model,
+            35.00, 40.95, 29.80
+        );
+        if ($resultEx1['status'] === 'success') {
+            $results['ex1'] = $resultEx1['data'];
+            $summary[$resultEx1['action']]++;
+        } else {
+            $summary['skipped']++;
         }
 
         // Hitung Deformasi Ex2
-        $pembacaanEx2 = $this->pembacaanEx2Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($pembacaanEx2) {
-            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex2
-            $existingEx2 = $this->deformasiEx2Model->where('id_pengukuran', $idPengukuran)->first();
-            if (!$existingEx2) {
-                $pemb_awal10 = 22.60;
-                $pemb_awal20 = 23.70;
-                $pemb_awal30 = 30.75;
-
-                $hasilEx2 = [
-                    'id_pengukuran' => $idPengukuran,
-                    'pemb_awal10'   => $pemb_awal10,
-                    'pemb_awal20'   => $pemb_awal20,
-                    'pemb_awal30'   => $pemb_awal30,
-                    'deformasi_10'  => $pembacaanEx2['pembacaan_10'] - $pemb_awal10,
-                    'deformasi_20'  => $pembacaanEx2['pembacaan_20'] - $pemb_awal20,
-                    'deformasi_30'  => $pembacaanEx2['pembacaan_30'] - $pemb_awal30,
-                ];
-
-                $insertIdEx2 = $this->deformasiEx2Model->insert($hasilEx2);
-                $results['ex2'] = $this->deformasiEx2Model->find($insertIdEx2);
-            } else {
-                $results['ex2'] = $existingEx2;
-            }
+        $resultEx2 = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx2Model,
+            $this->deformasiEx2Model,
+            22.60, 23.70, 30.75
+        );
+        if ($resultEx2['status'] === 'success') {
+            $results['ex2'] = $resultEx2['data'];
+            $summary[$resultEx2['action']]++;
+        } else {
+            $summary['skipped']++;
         }
 
         // Hitung Deformasi Ex3
-        $pembacaanEx3 = $this->pembacaanEx3Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($pembacaanEx3) {
-            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex3
-            $existingEx3 = $this->deformasiEx3Model->where('id_pengukuran', $idPengukuran)->first();
-            if (!$existingEx3) {
-                $pemb_awal10 = 37.75;
-                $pemb_awal20 = 39.15;
-                $pemb_awal30 = 41.40;
-
-                $hasilEx3 = [
-                    'id_pengukuran' => $idPengukuran,
-                    'pemb_awal10'   => $pemb_awal10,
-                    'pemb_awal20'   => $pemb_awal20,
-                    'pemb_awal30'   => $pemb_awal30,
-                    'deformasi_10'  => $pembacaanEx3['pembacaan_10'] - $pemb_awal10,
-                    'deformasi_20'  => $pembacaanEx3['pembacaan_20'] - $pemb_awal20,
-                    'deformasi_30'  => $pembacaanEx3['pembacaan_30'] - $pemb_awal30,
-                ];
-
-                $insertIdEx3 = $this->deformasiEx3Model->insert($hasilEx3);
-                $results['ex3'] = $this->deformasiEx3Model->find($insertIdEx3);
-            } else {
-                $results['ex3'] = $existingEx3;
-            }
+        $resultEx3 = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx3Model,
+            $this->deformasiEx3Model,
+            37.75, 39.15, 41.40
+        );
+        if ($resultEx3['status'] === 'success') {
+            $results['ex3'] = $resultEx3['data'];
+            $summary[$resultEx3['action']]++;
+        } else {
+            $summary['skipped']++;
         }
 
         // Hitung Deformasi Ex4
-        $pembacaanEx4 = $this->pembacaanEx4Model->where('id_pengukuran', $idPengukuran)->first();
-        if ($pembacaanEx4) {
-            // CEK APAKAH SUDAH ADA DATA DEFORMASI Ex4
-            $existingEx4 = $this->deformasiEx4Model->where('id_pengukuran', $idPengukuran)->first();
-            if (!$existingEx4) {
-                $pemb_awal10 = 33.80;
-                $pemb_awal20 = 29.30;
-                $pemb_awal30 = 48.95;
-
-                $hasilEx4 = [
-                    'id_pengukuran' => $idPengukuran,
-                    'pemb_awal10'   => $pemb_awal10,
-                    'pemb_awal20'   => $pemb_awal20,
-                    'pemb_awal30'   => $pemb_awal30,
-                    'deformasi_10'  => $pembacaanEx4['pembacaan_10'] - $pemb_awal10,
-                    'deformasi_20'  => $pembacaanEx4['pembacaan_20'] - $pemb_awal20,
-                    'deformasi_30'  => $pembacaanEx4['pembacaan_30'] - $pemb_awal30,
-                ];
-
-                $insertIdEx4 = $this->deformasiEx4Model->insert($hasilEx4);
-                $results['ex4'] = $this->deformasiEx4Model->find($insertIdEx4);
-            } else {
-                $results['ex4'] = $existingEx4;
-            }
+        $resultEx4 = $this->hitungDeformasiSingle(
+            $idPengukuran,
+            $this->pembacaanEx4Model,
+            $this->deformasiEx4Model,
+            33.80, 29.30, 48.95
+        );
+        if ($resultEx4['status'] === 'success') {
+            $results['ex4'] = $resultEx4['data'];
+            $summary[$resultEx4['action']]++;
+        } else {
+            $summary['skipped']++;
         }
 
         // Response
         return $this->response->setJSON([
             'status' => 'success',
             'message' => 'Perhitungan semua deformasi berhasil',
+            'summary' => $summary,
+            'data' => $results
+        ]);
+    }
+
+    /**
+     * API untuk mendapatkan data deformasi berdasarkan id_pengukuran
+     */
+    public function GetDeformasiByPengukuran()
+    {
+        $idPengukuran = $this->request->getGet('id_pengukuran');
+
+        if (!$idPengukuran) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Parameter id_pengukuran diperlukan'
+            ]);
+        }
+
+        $results = [];
+
+        // Ambil data deformasi Ex1
+        $deformasiEx1 = $this->deformasiEx1Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($deformasiEx1) {
+            $results['ex1'] = $deformasiEx1;
+        }
+
+        // Ambil data deformasi Ex2
+        $deformasiEx2 = $this->deformasiEx2Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($deformasiEx2) {
+            $results['ex2'] = $deformasiEx2;
+        }
+
+        // Ambil data deformasi Ex3
+        $deformasiEx3 = $this->deformasiEx3Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($deformasiEx3) {
+            $results['ex3'] = $deformasiEx3;
+        }
+
+        // Ambil data deformasi Ex4
+        $deformasiEx4 = $this->deformasiEx4Model->where('id_pengukuran', $idPengukuran)->first();
+        if ($deformasiEx4) {
+            $results['ex4'] = $deformasiEx4;
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
             'data' => $results
         ]);
     }

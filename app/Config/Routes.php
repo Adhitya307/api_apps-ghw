@@ -322,3 +322,71 @@ $routes->group('rightpiezo', function($routes) {
         $routes->get('trigger/(:num)/(:segment)', 'Rightpiezo\Hitungright::triggerHitung/$1/$2');
     });
 });
+
+
+// Exstenso API Routes
+$routes->group('api/exstenso', function($routes) {
+    $routes->get('pengukuran-eks', 'Exstenso\ExtensoApiController::pengukuranEks');
+    
+    // Pembacaan
+    $routes->get('pembacaan-ex1', 'Exstenso\ExtensoApiController::pembacaanEx1');
+    $routes->get('pembacaan-ex2', 'Exstenso\ExtensoApiController::pembacaanEx2');
+    $routes->get('pembacaan-ex3', 'Exstenso\ExtensoApiController::pembacaanEx3');
+    $routes->get('pembacaan-ex4', 'Exstenso\ExtensoApiController::pembacaanEx4');
+    
+    // Deformasi
+    $routes->get('deformasi-ex1', 'Exstenso\ExtensoApiController::deformasiEx1');
+    $routes->get('deformasi-ex2', 'Exstenso\ExtensoApiController::deformasiEx2');
+    $routes->get('deformasi-ex3', 'Exstenso\ExtensoApiController::deformasiEx3');
+    $routes->get('deformasi-ex4', 'Exstenso\ExtensoApiController::deformasiEx4');
+    
+    // Readings
+    $routes->get('readings-ex1', 'Exstenso\ExtensoApiController::readingsEx1');
+    $routes->get('readings-ex2', 'Exstenso\ExtensoApiController::readingsEx2');
+    $routes->get('readings-ex3', 'Exstenso\ExtensoApiController::readingsEx3');
+    $routes->get('readings-ex4', 'Exstenso\ExtensoApiController::readingsEx4');
+    
+    // Combined
+    $routes->get('all-data', 'Exstenso\ExtensoApiController::allData');
+    $routes->get('by-pengukuran/(:num)', 'Exstenso\ExtensoApiController::byPengukuran/$1');
+    $routes->get('sync', 'Exstenso\ExtensoApiController::sync');
+    $routes->get('health', 'Exstenso\ExtensoApiController::health');
+    $routes->get('latest', 'Exstenso\ExtensoApiController::latest');
+    
+    // Detail - TAMBAHKAN INI
+    $routes->get('detail/(:num)', 'Exstenso\ExtensoApiController::detail/$1');
+});
+
+// Right Piezometer API Routes
+$routes->group('api/rightpiezo', function($routes) {
+    // Master Data
+    $routes->get('pengukuran', 'Rightpiezo\RightPiezoApiController::pengukuran');
+    $routes->get('pengukuran/(:num)', 'Rightpiezo\RightPiezoApiController::pengukuranById/$1');
+    
+    // Reading Data
+    $routes->get('ireading', 'Rightpiezo\RightPiezoApiController::ireading');
+    $routes->get('ireading/by_pengukuran/(:num)', 'Rightpiezo\RightPiezoApiController::ireadingByPengukuran/$1');
+    $routes->get('ireading/by_titik/(:any)', 'Rightpiezo\RightPiezoApiController::ireadingByTitik/$1');
+    
+    // Input Data
+    $routes->get('tpembacaan', 'Rightpiezo\RightPiezoApiController::tpembacaan');
+    $routes->get('tpembacaan/by_pengukuran/(:num)', 'Rightpiezo\RightPiezoApiController::tpembacaanByPengukuran/$1');
+    $routes->get('tpembacaan/by_lokasi/(:any)', 'Rightpiezo\RightPiezoApiController::tpembacaanByLokasi/$1');
+    
+    // Calculation Data
+    $routes->get('bpiezometrik', 'Rightpiezo\RightPiezoApiController::bpiezometrik');
+    $routes->get('bpiezometrik/by_pengukuran/(:num)', 'Rightpiezo\RightPiezoApiController::bpiezometrikByPengukuran/$1');
+    $routes->get('perhitunganpsmetrik', 'Rightpiezo\RightPiezoApiController::perhitunganpsmetrik');
+    $routes->get('perhitunganpsmetrik/by_pengukuran/(:num)', 'Rightpiezo\RightPiezoApiController::perhitunganpsmetrikByPengukuran/$1');
+    
+    // Combined Data
+    $routes->get('detail/(:num)', 'Rightpiezo\RightPiezoApiController::detail/$1');
+    $routes->get('all', 'Rightpiezo\RightPiezoApiController::all');
+    $routes->get('sync', 'Rightpiezo\RightPiezoApiController::sync');
+    
+    // Utility
+    $routes->get('health', 'Rightpiezo\RightPiezoApiController::health');
+    $routes->get('latest', 'Rightpiezo\RightPiezoApiController::latest');
+    $routes->get('by_date', 'Rightpiezo\RightPiezoApiController::byDate');
+    $routes->get('statistics', 'Rightpiezo\RightPiezoApiController::statistics');
+});
