@@ -41,14 +41,14 @@ class GetPengukuranLeftpiez extends Controller
             $data = $query->getResultArray();
 
             return $this->response->setJSON([
-                "status" => "success",
+                "success" => true, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "data" => $data
             ]);
 
         } catch (\Exception $e) {
             log_message('error', '[GetPengukuranLeftpiez] Error: ' . $e->getMessage());
             return $this->response->setJSON([
-                "status" => "error",
+                "success" => false, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "message" => "Gagal mengambil data: " . $e->getMessage()
             ]);
         }
@@ -70,14 +70,14 @@ class GetPengukuranLeftpiez extends Controller
             $data = $query->getResultArray();
 
             return $this->response->setJSON([
-                "status" => "success",
+                "success" => true, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "data" => $data
             ]);
 
         } catch (\Exception $e) {
             log_message('error', '[GetPengukuranLeftpiez] Error: ' . $e->getMessage());
             return $this->response->setJSON([
-                "status" => "error",
+                "success" => false, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "message" => "Gagal mengambil data: " . $e->getMessage()
             ]);
         }
@@ -110,14 +110,14 @@ class GetPengukuranLeftpiez extends Controller
             $data = $query->get()->getResultArray();
 
             return $this->response->setJSON([
-                "status" => "success",
+                "success" => true, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "data" => $data
             ]);
 
         } catch (\Exception $e) {
             log_message('error', '[GetPengukuranLeftpiez] Error: ' . $e->getMessage());
             return $this->response->setJSON([
-                "status" => "error",
+                "success" => false, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "message" => "Gagal mengambil data: " . $e->getMessage()
             ]);
         }
@@ -135,7 +135,7 @@ class GetPengukuranLeftpiez extends Controller
 
             if (!$id) {
                 return $this->response->setJSON([
-                    "status" => "error",
+                    "success" => false, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                     "message" => "ID pengukuran harus diisi!"
                 ]);
             }
@@ -149,20 +149,20 @@ class GetPengukuranLeftpiez extends Controller
 
             if (!$data) {
                 return $this->response->setJSON([
-                    "status" => "error",
+                    "success" => false, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                     "message" => "Data pengukuran tidak ditemukan!"
                 ]);
             }
 
             return $this->response->setJSON([
-                "status" => "success",
+                "success" => true, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "data" => $data
             ]);
 
         } catch (\Exception $e) {
             log_message('error', '[GetPengukuranLeftpiez] Error: ' . $e->getMessage());
             return $this->response->setJSON([
-                "status" => "error",
+                "success" => false, // ✅ PERBAIKAN: Gunakan "success" bukan "status"
                 "message" => "Gagal mengambil data: " . $e->getMessage()
             ]);
         }

@@ -194,43 +194,30 @@ $routes->post('exstenso/hitung-semua-deformasi', 'Exstenso\PerhitunganExtenso::H
 
 // Routes untuk Left Piezometer
 $routes->group('leftpiez', function($routes) {
-    // Input Data - POST untuk semua operasi
+    // ===========================================================================
+    // INPUT DATA & PENGUKURAN
+    // ===========================================================================
     $routes->post('inputdata', 'Leftpiez\InputdataLeftpiez::index');
+    $routes->post('update-pembacaan', 'Leftpiez\InputdataLeftpiez::updatePembacaan');
     
-    // Get Data Pengukuran - GET (berbagai metode)
-    $routes->get('getpengukuran', 'Leftpiez\GetPengukuranLeftpiez::index'); // Data bulan ini
-    $routes->get('getpengukuran/all', 'Leftpiez\GetPengukuranLeftpiez::getAll'); // Semua data
-    $routes->get('getpengukuran/period', 'Leftpiez\GetPengukuranLeftpiez::getByPeriod'); // By period
-    $routes->get('getpengukuran/(:num)', 'Leftpiez\GetPengukuranLeftpiez::getById/$1'); // By ID
+    // Get Data Pengukuran
+    $routes->get('getpengukuran', 'Leftpiez\InputdataLeftpiez::getPengukuran');
+    $routes->get('getpengukuran/(:num)', 'Leftpiez\InputdataLeftpiez::getPengukuranById/$1');
     
-    // Get Data Pembacaan - GET
+    // Get Data Pembacaan
     $routes->get('getdata', 'Leftpiez\InputdataLeftpiez::getData');
-    
-    // Get All Data Pembacaan - GET
     $routes->get('getalldata', 'Leftpiez\InputdataLeftpiez::getAllData');
 });
 
 $routes->group('leftpiez', function($r) {
-    // Hitung satu L tertentu, kolom dikirim via query string ?kolom=l_01
-    $r->get('hitung-satu/(:num)', 'LeftPiez\HitungLeft::hitungSatu/$1');
-
-    // Hitung semua L01-L10 + SPZ02
-    $r->get('hitung-semua/(:num)', 'LeftPiez\HitungLeft::hitungSemua/$1');
-
-    // Preview (POST)
-    $r->post('preview', 'LeftPiez\HitungLeft::preview');
-
-    // Optional: hitungByPengukuran lama, bisa tetap ada jika ingin dipakai
-    $r->get('hitung/(:num)', 'LeftPiez\HitungLeft::hitungByPengukuran/$1');
-    
     // ===========================================================================
-    // ROUTES UNTUK CONTROLLER GABUNGAN - PERHITUNGAN DARI PEMBACAAN
+    // PERHITUNGAN DARI PEMBACAAN (FEET & INCH KE METRIK)
     // ===========================================================================
     $r->get('hitung/hitunglokasi/(:num)/(:any)', 'LeftPiez\HitungLeft::hitungLokasi/$1/$2');
     $r->get('hitung/hitungsemua/(:num)', 'LeftPiez\HitungLeft::hitungSemuaDariPembacaan/$1');
     
     // ===========================================================================
-    // ROUTES UNTUK CONTROLLER GABUNGAN - PERHITUNGAN RUMUS Elv_Piez
+    // PERHITUNGAN RUMUS (Elv_Piez - l_XX)
     // ===========================================================================
     $r->get('hitung-rumus/semua/(:num)', 'LeftPiez\HitungLeft::hitungSemuaRumus/$1');
     $r->get('hitung-rumus/(:any)/(:num)', 'LeftPiez\HitungLeft::hitungRumus/$1/$2');
@@ -241,37 +228,16 @@ $routes->group('leftpiez', function($r) {
     $r->put('update-rumus/(:any)', 'LeftPiez\HitungLeft::updateDataRumus/$1');
     
     // ===========================================================================
-    // ROUTES BARU UNTUK IREADING A & B
-    // ===========================================================================
-    $r->post('ireading/(:any)', 'LeftPiez\HitungLeft::simpanIreading/$1'); // A atau B
-    $r->get('ireading/(:any)', 'LeftPiez\HitungLeft::getIreading/$1'); // A atau B
-    
-    // ===========================================================================
-    // ROUTES BARU UNTUK PERHITUNGAN DENGAN IREADING
-    // ===========================================================================
-    $r->get('hitung-dengan-ireading/(:any)/(:num)/(:any)', 'LeftPiez\HitungLeft::hitungDenganIreading/$1/$2/$3'); // piezometer/id/source
-    
-    // ===========================================================================
-    // ROUTES BARU UNTUK INSERT DATA PERHITUNGAN
-    // ===========================================================================
-    $r->post('insert-rumus/(:any)', 'LeftPiez\HitungLeft::insertRumus/$1');
-    
-    // ===========================================================================
-    // ROUTES BARU UNTUK GET NILAI METRIK
-    // ===========================================================================
-    $r->get('nilai-metrik', 'LeftPiez\HitungLeft::getNilaiMetrik');
-    $r->get('nilai-metrik/(:any)', 'LeftPiez\HitungLeft::getNilaiMetrik/$1');
-    
-    // ===========================================================================
-    // ROUTES BARU UNTUK UPDATE LENGKAP
-    // ===========================================================================
-    $r->put('update-rumus-lengkap/(:any)', 'LeftPiez\HitungLeft::updateRumusLengkap/$1');
-    
-    // ===========================================================================
     // DASHBOARD & UTILITY
     // ===========================================================================
     $r->get('dashboard/(:num)', 'LeftPiez\HitungLeft::dashboard/$1');
-    $r->get('status/(:num)', 'LeftPiez\HitungLeft::dashboard/$1'); // alias untuk dashboard
+    $r->get('get-piezometers', 'LeftPiez\HitungLeft::getPiezometers');
+    
+    // ===========================================================================
+    // ROUTES KOMPATIBILITAS (untuk backward compatibility)
+    // ===========================================================================
+    $r->get('hitung/(:num)', 'LeftPiez\HitungLeft::hitungSemuaDariPembacaan/$1'); // alias
+    $r->get('status/(:num)', 'LeftPiez\HitungLeft::dashboard/$1'); // alias
 });
 
 

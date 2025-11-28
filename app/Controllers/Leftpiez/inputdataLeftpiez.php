@@ -5,25 +5,15 @@ namespace App\Controllers\Leftpiez;
 use CodeIgniter\Controller;
 use Config\Database;
 use App\Models\LeftPiez\TPengukuranLeftpiezModel;
-use App\Models\LeftPiez\TPembacaanL01Model;
-use App\Models\LeftPiez\TPembacaanL02Model;
-use App\Models\LeftPiez\TPembacaanL03Model;
-use App\Models\LeftPiez\TPembacaanL04Model;
-use App\Models\LeftPiez\TPembacaanL05Model;
-use App\Models\LeftPiez\TPembacaanL06Model;
-use App\Models\LeftPiez\TPembacaanL07Model;
-use App\Models\LeftPiez\TPembacaanL08Model;
-use App\Models\LeftPiez\TPembacaanL09Model;
-use App\Models\LeftPiez\TPembacaanL10Model;
-use App\Models\LeftPiez\TPembacaanSpz02Model;
-use App\Models\LeftPiez\IreadingA; // ✅ TAMBAHAN: Model untuk initial readings A
-use App\Models\LeftPiez\IreadingB; // ✅ TAMBAHAN: Model untuk initial readings B
+use App\Models\LeftPiez\TPembacaanLeftPiezModel; // Model pembacaan terpadu
+use App\Models\LeftPiez\IreadingA; // Model untuk initial readings A
+use App\Models\LeftPiez\IreadingB; // Model untuk initial readings B
 
 class InputdataLeftpiez extends Controller
 {
     protected $db;
     protected $pengukuranModel;
-    protected $pembacaanModels;
+    protected $pembacaanModel; // Model pembacaan terpadu
 
     public function __construct()
     {
@@ -31,21 +21,7 @@ class InputdataLeftpiez extends Controller
         $this->db = Database::connect('db_left_piez');
         
         $this->pengukuranModel = new TPengukuranLeftpiezModel();
-        
-        // Inisialisasi semua model pembacaan
-        $this->pembacaanModels = [
-            'L01' => new TPembacaanL01Model(),
-            'L02' => new TPembacaanL02Model(),
-            'L03' => new TPembacaanL03Model(),
-            'L04' => new TPembacaanL04Model(),
-            'L05' => new TPembacaanL05Model(),
-            'L06' => new TPembacaanL06Model(),
-            'L07' => new TPembacaanL07Model(),
-            'L08' => new TPembacaanL08Model(),
-            'L09' => new TPembacaanL09Model(),
-            'L10' => new TPembacaanL10Model(),
-            'SPZ02' => new TPembacaanSpz02Model()
-        ];
+        $this->pembacaanModel = new TPembacaanLeftPiezModel(); // Model terpadu
 
         // Support CORS untuk testing Android / Postman
         header("Access-Control-Allow-Origin: *");
@@ -165,26 +141,47 @@ class InputdataLeftpiez extends Controller
             $tanggal = $this->getVal('tanggal', $data);
             $dma     = $this->getVal('dma', $data);
 
-            if (!$tahun || !$tanggal) return $this->response->setJSON(["status"=>"error","message"=>"Tahun dan Tanggal wajib diisi!"]);
-            if ($periode && !preg_match('/^TW-/i', $periode) && is_numeric($periode)) $periode = "TW-" . $periode;
+            if (!$tahun || !$tanggal) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Tahun dan Tanggal wajib diisi!"
+                ]);
+            }
+
+            if ($periode && !preg_match('/^TW-/i', $periode) && is_numeric($periode)) {
+                $periode = "TW-" . $periode;
+            }
 
             // CREATE
             if (!$pengukuran_id || !is_numeric($pengukuran_id)) {
                 // Cek existing
                 $checkExisting = $this->db->table("t_pengukuran_leftpiez")
-                    ->where("tahun", $tahun)->where("periode", $periode)->where("tanggal", $tanggal)->get()->getRow();
+                    ->where("tahun", $tahun)
+                    ->where("periode", $periode)
+                    ->where("tanggal", $tanggal)
+                    ->get()
+                    ->getRow();
 
-                if ($checkExisting) return $this->response->setJSON([
-                    "status"=>"error",
-                    "message"=>"Data pengukuran dengan Tahun $tahun, Periode $periode, dan Tanggal $tanggal sudah ada!",
-                    "pengukuran_id"=>$checkExisting->id_pengukuran
-                ]);
+                if ($checkExisting) {
+                    return $this->response->setJSON([
+                        "status" => "error",
+                        "message" => "Data pengukuran dengan Tahun $tahun, Periode $periode, dan Tanggal $tanggal sudah ada!",
+                        "pengukuran_id" => $checkExisting->id_pengukuran
+                    ]);
+                }
 
-                $insertData = ["tahun"=>$tahun,"periode"=>$periode,"tanggal"=>$tanggal,"dma"=>$dma,"temp_id"=>$temp_id];
-                $this->pengukuranModel->save($insertData); // pakai save() supaya aman
+                $insertData = [
+                    "tahun" => $tahun,
+                    "periode" => $periode,
+                    "tanggal" => $tanggal,
+                    "dma" => $dma,
+                    "temp_id" => $temp_id
+                ];
+                
+                $this->pengukuranModel->save($insertData);
                 $pengukuran_id = $this->pengukuranModel->getInsertID();
 
-                // ✅ TAMBAHAN: INSERT INITIAL READINGS A OTOMATIS SETELAH CREATE PENGUKURAN
+                // ✅ INSERT INITIAL READINGS A OTOMATIS SETELAH CREATE PENGUKURAN
                 $initialValuesA = [
                     'L_01' => 650.64,
                     'L_02' => 650.60,
@@ -202,7 +199,7 @@ class InputdataLeftpiez extends Controller
                 $ireadingA = new IreadingA();
                 $ireadingA->insertInitialReadings($pengukuran_id, $initialValuesA);
 
-                // ✅ TAMBAHAN: INSERT INITIAL READINGS B OTOMATIS SETELAH CREATE PENGUKURAN
+                // ✅ INSERT INITIAL READINGS B OTOMATIS SETELAH CREATE PENGUKURAN
                 $initialValuesB = [
                     'L_01'  => 71.5,
                     'L_02'  => 73,
@@ -221,27 +218,6 @@ class InputdataLeftpiez extends Controller
                 $ireadingB->insertInitialReadings($pengukuran_id, $initialValuesB);
 
                 log_message('debug', '[InitialReadings] Insert otomatis A & B untuk pengukuran_id=' . $pengukuran_id);
-                // ✅ END TAMBAHAN
-
-                // INSERT METRIK DEFAULT MUTLAK - SESUAIKAN DENGAN STRUKTUR TABEL
-                $this->db->table("b_piezo_metrik")->insert([
-                    "id_pengukuran" => $pengukuran_id,
-                    "M_feet" => 0.3048,   // gunakan M_feet sesuai struktur tabel
-                    "M_inch" => 0.0254,   // gunakan M_inch sesuai struktur tabel
-                    "l_01" => null,
-                    "l_02" => null,
-                    "l_03" => null,
-                    "l_04" => null,
-                    "l_05" => null,
-                    "l_06" => null,
-                    "l_07" => null,
-                    "l_08" => null,
-                    "l_09" => null,
-                    "l_10" => null,
-                    "spz_02" => null,
-                    "created_at" => date("Y-m-d H:i:s"),
-                    "updated_at" => date("Y-m-d H:i:s")
-                ]);
 
                 return $this->response->setJSON([
                     "status" => "success",
@@ -255,12 +231,23 @@ class InputdataLeftpiez extends Controller
             if ($dma !== null) $updateData["dma"] = $dma;
             if ($periode !== null) $updateData["periode"] = $periode;
             if ($temp_id !== null) $updateData["temp_id"] = $temp_id;
-            if (!empty($updateData)) $this->pengukuranModel->update($pengukuran_id, $updateData);
+            
+            if (!empty($updateData)) {
+                $this->pengukuranModel->update($pengukuran_id, $updateData);
+            }
 
-            return $this->response->setJSON(["status"=>"success","message"=>"Data pengukuran berhasil diperbarui.","pengukuran_id"=>$pengukuran_id]);
+            return $this->response->setJSON([
+                "status" => "success",
+                "message" => "Data pengukuran berhasil diperbarui.",
+                "pengukuran_id" => $pengukuran_id
+            ]);
 
         } catch (\Exception $e) {
-            return $this->response->setJSON(["status"=>"error","message"=>"Terjadi kesalahan saat menyimpan data pengukuran: ".$e->getMessage()]);
+            log_message('error', '[savePengukuran] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Terjadi kesalahan saat menyimpan data pengukuran: " . $e->getMessage()
+            ]);
         }
     }
 
@@ -317,25 +304,55 @@ class InputdataLeftpiez extends Controller
     private function savePembacaan($data, $pengukuran_id, $lokasi)
     {
         try {
-            if (!array_key_exists($lokasi, $this->pembacaanModels)) return $this->response->setJSON(["status"=>"error","message"=>"Lokasi tidak valid: $lokasi"]);
-            $model = $this->pembacaanModels[$lokasi];
+            // Validasi lokasi
+            $lokasi = strtoupper($lokasi);
+            if (!$this->pembacaanModel->isValidPiezometer($lokasi)) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Lokasi tidak valid: $lokasi"
+                ]);
+            }
 
             // Ambil input user untuk feet/inch
             $feet = $this->getVal('feet', $data);
             $inch = $this->getVal('inch', $data);
 
-            $existing = $model->where("id_pengukuran", $pengukuran_id)->first();
-            if ($existing) return $this->response->setJSON(["status"=>"error","message"=>"Data pembacaan $lokasi sudah ada!"]);
+            // Cek apakah data pembacaan sudah ada
+            $existing = $this->pembacaanModel->getByPengukuranDanTipe($pengukuran_id, $lokasi);
+            
+            if ($existing) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pembacaan $lokasi sudah ada!"
+                ]);
+            }
 
-            $insertData = ["id_pengukuran"=>$pengukuran_id, "feet"=>$feet, "inch"=>$inch];
-            $insertData = array_filter($insertData,function($v){return $v!==null;});
+            // Simpan data pembacaan menggunakan model terpadu
+            $insertData = [
+                "id_pengukuran" => $pengukuran_id,
+                "tipe_piezometer" => $lokasi,
+                "feet" => $feet,
+                "inch" => $inch
+            ];
 
-            $model->save($insertData);
+            // Filter null values
+            $insertData = array_filter($insertData, function($v) { 
+                return $v !== null; 
+            });
 
-            return $this->response->setJSON(["status"=>"success","message"=>"Data pembacaan $lokasi berhasil disimpan."]);
+            $this->pembacaanModel->insert($insertData);
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "message" => "Data pembacaan $lokasi berhasil disimpan."
+            ]);
 
         } catch (\Exception $e) {
-            return $this->response->setJSON(["status"=>"error","message"=>"Terjadi kesalahan saat menyimpan data pembacaan $lokasi: ".$e->getMessage()]);
+            log_message('error', "[savePembacaan] Error for $lokasi: " . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Terjadi kesalahan saat menyimpan data pembacaan $lokasi: " . $e->getMessage()
+            ]);
         }
     }
 
@@ -385,15 +402,14 @@ class InputdataLeftpiez extends Controller
 
             // Validasi lokasi
             $lokasi = strtoupper($lokasi);
-            if (!array_key_exists($lokasi, $this->pembacaanModels)) {
+            if (!$this->pembacaanModel->isValidPiezometer($lokasi)) {
                 return $this->response->setJSON([
                     "status" => "error",
                     "message" => "Lokasi tidak valid: $lokasi"
                 ]);
             }
 
-            $model = $this->pembacaanModels[$lokasi];
-            $data = $model->where('id_pengukuran', $pengukuran_id)->first();
+            $data = $this->pembacaanModel->getByPengukuranDanTipe($pengukuran_id, $lokasi);
 
             return $this->response->setJSON([
                 "status" => "success",
@@ -424,19 +440,18 @@ class InputdataLeftpiez extends Controller
                 ]);
             }
 
-            $allData = [];
+            // Ambil semua data pembacaan sekaligus
+            $allData = $this->pembacaanModel->getByPengukuran($pengukuran_id);
 
-            // Ambil data dari semua lokasi
-            foreach ($this->pembacaanModels as $lokasi => $model) {
-                $data = $model->where('id_pengukuran', $pengukuran_id)->first();
-                if ($data) {
-                    $allData[$lokasi] = $data;
-                }
+            // Format data untuk response
+            $formattedData = [];
+            foreach ($allData as $data) {
+                $formattedData[$data['tipe_piezometer']] = $data;
             }
 
             return $this->response->setJSON([
                 "status" => "success",
-                "data" => $allData
+                "data" => $formattedData
             ]);
 
         } catch (\Exception $e) {
@@ -486,6 +501,68 @@ class InputdataLeftpiez extends Controller
             return $this->response->setJSON([
                 "status" => "error",
                 "message" => "Gagal mengambil data pengukuran: " . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Method untuk update data pembacaan yang sudah ada
+     */
+    public function updatePembacaan()
+    {
+        try {
+            $data = $this->request->getJSON(true);
+            
+            $pengukuran_id = $this->getVal('pengukuran_id', $data);
+            $lokasi = $this->getVal('lokasi', $data);
+            $feet = $this->getVal('feet', $data);
+            $inch = $this->getVal('inch', $data);
+
+            if (!$pengukuran_id || !$lokasi) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Parameter pengukuran_id dan lokasi diperlukan!"
+                ]);
+            }
+
+            // Validasi lokasi
+            $lokasi = strtoupper($lokasi);
+            if (!$this->pembacaanModel->isValidPiezometer($lokasi)) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Lokasi tidak valid: $lokasi"
+                ]);
+            }
+
+            // Cek apakah data pembacaan sudah ada
+            $existing = $this->pembacaanModel->getByPengukuranDanTipe($pengukuran_id, $lokasi);
+            
+            if (!$existing) {
+                return $this->response->setJSON([
+                    "status" => "error",
+                    "message" => "Data pembacaan $lokasi tidak ditemukan!"
+                ]);
+            }
+
+            // Update data pembacaan
+            $updateData = [];
+            if ($feet !== null) $updateData['feet'] = $feet;
+            if ($inch !== null) $updateData['inch'] = $inch;
+
+            if (!empty($updateData)) {
+                $this->pembacaanModel->update($existing['id_pembacaan'], $updateData);
+            }
+
+            return $this->response->setJSON([
+                "status" => "success",
+                "message" => "Data pembacaan $lokasi berhasil diperbarui."
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[updatePembacaan] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal memperbarui data pembacaan: " . $e->getMessage()
             ]);
         }
     }
