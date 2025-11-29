@@ -240,6 +240,52 @@ $routes->group('leftpiez', function($r) {
     $r->get('status/(:num)', 'LeftPiez\HitungLeft::dashboard/$1'); // alias
 });
 
+// Left Piezometer API Routes
+$routes->group('api/leftpiezo', function($routes) {
+    // Master Data - Pengukuran
+    $routes->get('pengukuran-leftpiez', 'Leftpiez\LeftPiezoApiController::pengukuran');
+    $routes->get('pengukuran-leftpiez/(:num)', 'Leftpiez\LeftPiezoApiController::pengukuranById/$1');
+    
+    // Reading Data - I_Reading A & B
+    $routes->get('ireading-a', 'Leftpiez\LeftPiezoApiController::ireadingA');
+    $routes->get('ireading-a/by_pengukuran/(:num)', 'Leftpiez\LeftPiezoApiController::ireadingAByPengukuran/$1');
+    $routes->get('ireading-a/by_titik/(:segment)', 'Leftpiez\LeftPiezoApiController::ireadingAByTitik/$1');
+    
+    $routes->get('ireading-b', 'Leftpiez\LeftPiezoApiController::ireadingB');
+    $routes->get('ireading-b/by_pengukuran/(:num)', 'Leftpiez\LeftPiezoApiController::ireadingBByPengukuran/$1');
+    $routes->get('ireading-b/by_titik/(:segment)', 'Leftpiez\LeftPiezoApiController::ireadingBByTitik/$1');
+    
+    // Input Data - T_Pembacaan
+    $routes->get('tpembacaan', 'Leftpiez\LeftPiezoApiController::tpembacaan');
+    $routes->get('tpembacaan/by_pengukuran/(:num)', 'Leftpiez\LeftPiezoApiController::tpembacaanByPengukuran/$1');
+    $routes->get('tpembacaan/by_tipe/(:segment)', 'Leftpiez\LeftPiezoApiController::tpembacaanByTipe/$1');
+    
+    // Calculation Data
+    $routes->get('bpiezo-metrik', 'Leftpiez\LeftPiezoApiController::bpiezometrik');
+    $routes->get('bpiezo-metrik/by_pengukuran/(:num)', 'Leftpiez\LeftPiezoApiController::bpiezometrikByPengukuran/$1');
+    
+    $routes->get('perhitungan-leftpiez', 'Leftpiez\LeftPiezoApiController::perhitunganleftpiez');
+    $routes->get('perhitungan-leftpiez/by_pengukuran/(:num)', 'Leftpiez\LeftPiezoApiController::perhitunganleftpiezByPengukuran/$1');
+    $routes->get('perhitungan-leftpiez/by_tipe/(:segment)', 'Leftpiez\LeftPiezoApiController::perhitunganleftpiezByTipe/$1');
+    
+    // Combined Data
+    $routes->get('detail/(:num)', 'Leftpiez\LeftPiezoApiController::detail/$1');
+    $routes->get('all', 'Leftpiez\LeftPiezoApiController::all');
+    $routes->get('sync', 'Leftpiez\LeftPiezoApiController::sync');
+    
+    // Utility Endpoints
+    $routes->get('health', 'Leftpiez\LeftPiezoApiController::health');
+    $routes->get('latest', 'Leftpiez\LeftPiezoApiController::latest');
+    $routes->get('by_date', 'Leftpiez\LeftPiezoApiController::byDate');
+    $routes->get('statistics', 'Leftpiez\LeftPiezoApiController::statistics');
+    $routes->get('by_tahun/(:num)', 'Leftpiez\LeftPiezoApiController::byTahun/$1');
+    $routes->get('by_periode/(:segment)', 'Leftpiez\LeftPiezoApiController::byPeriode/$1');
+    $routes->get('piezometer-points', 'Leftpiez\LeftPiezoApiController::piezometerPoints');
+    
+    // Bulk Operations
+    $routes->post('bulk-insert', 'Leftpiez\LeftPiezoApiController::bulkInsert');
+});
+
 
 // Routes untuk Right Piezo
 $routes->group('rightpiezo', function($routes) {
